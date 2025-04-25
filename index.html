@@ -1,0 +1,3177 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quizly - Quizz the app!</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <!-- Include Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-teal': {
+                            DEFAULT: '#0D7377',
+                            'light': '#14A098',
+                            'dark': '#0A585A',
+                            'ultralight': '#E0F2F7',
+                        },
+                        'brand-gold': {
+                            DEFAULT: '#FFB347',
+                            'light': '#FFD54F',
+                            'dark': '#FFA000',
+                        },
+                        'brand-charcoal': '#2D3436',
+                        'brand-lightgray': '#F8F9FA',
+                        'brand-subtle': '#E9ECEF',
+                    },
+                    fontFamily: {
+                        'sans': ['Poppins', 'sans-serif'],
+                        'serif': ['Playfair Display', 'serif'],
+                    },
+                    boxShadow: {
+                        'subtle': '0 4px 12px rgba(0, 0, 0, 0.05)',
+                        'card': '0 10px 25px rgba(0, 0, 0, 0.07)',
+                        'interactive': '0 2px 5px rgba(0, 0, 0, 0.1)',
+                        'interactive-lg': '0 4px 8px rgba(0, 0, 0, 0.12)',
+                        'glow': '0 0 15px rgba(20, 160, 152, 0.3)',
+                        'glass': '0 8px 32px rgba(0, 0, 0, 0.1)',
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        /* Base styles */
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background: linear-gradient(135deg, #f6f9fc 0%, #edf2f7 100%);
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(20, 160, 152, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 179, 71, 0.05) 0%, transparent 50%);
+            z-index: -1;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(13, 115, 119, 0.3);
+            border-radius: 4px;
+            transition: background 0.3s ease;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(13, 115, 119, 0.5);
+        }
+
+        /* Glass effect */
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: var(--tw-shadow-glass);
+        }
+
+        /* Modal styling */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(45, 52, 54, 0.7);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal:not(.hidden) {
+             opacity: 1;
+             visibility: visible;
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            min-width: 350px;
+            max-width: 90%;
+            width: auto;
+            max-width: 500px;
+            transform: scale(0.95) translateY(10px);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        .modal:not(.hidden) .modal-content {
+            transform: scale(1) translateY(0);
+        }
+
+         /* Animation for feedback */
+        .feedback-pop {
+            animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes pop {
+            0% { transform: scale(0.9); opacity: 0; }
+            70% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+         /* Quiz answer button states */
+        .correct-answer {
+            background: linear-gradient(135deg, #d1fae5, #ecfdf5) !important;
+            color: #065f46 !important;
+            border-color: #10b981 !important;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3), 0 4px 12px rgba(16, 185, 129, 0.1) !important;
+            animation: correctGlow 2s ease-in-out infinite !important;
+        }
+        @keyframes correctGlow {
+            0%, 100% { box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3), 0 4px 12px rgba(16, 185, 129, 0.1); }
+            50% { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.4), 0 8px 24px rgba(16, 185, 129, 0.2); }
+        }
+
+        .incorrect-answer {
+            background: linear-gradient(135deg, #fee2e2, #fff1f1) !important;
+            color: #991b1b !important;
+            border-color: #f87171 !important;
+            box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.3), 0 4px 12px rgba(248, 113, 113, 0.1) !important;
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both !important;
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        .selected-answer {
+            border-width: 2px;
+            border-color: #14A098 !important;
+            box-shadow: 0 0 0 2px rgba(20, 160, 152, 0.3), 0 4px 12px rgba(20, 160, 152, 0.1) !important;
+        }
+
+        /* Button focus style */
+        button:focus-visible, a:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(13, 115, 119, 0.4), 0 4px 12px rgba(13, 115, 119, 0.1);
+        }
+
+        /* Input focus style */
+        input:focus-visible {
+            outline: none;
+            border-color: #14A098;
+            box-shadow: 0 0 0 3px rgba(13, 115, 119, 0.2), 0 4px 12px rgba(13, 115, 119, 0.1);
+        }
+
+        /* Hidden class */
+         [hidden], .hidden { display: none !important; }
+
+        /* Button styling */
+        .btn {
+            font-weight: 600;
+            padding: 0.875rem 1.75rem;
+            border-radius: 9999px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--tw-shadow, 0 2px 5px rgba(0, 0, 0, 0.1));
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.025em;
+        }
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.2), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+        .btn:hover::before {
+            transform: translateX(100%);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--tw-shadow, 0 8px 20px rgba(0, 0, 0, 0.15));
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #14A098, #0D7377);
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #0D7377, #0A585A);
+        }
+
+        .btn-outline {
+            border: 2px solid #14A098;
+            color: #0D7377;
+            background: linear-gradient(to bottom, rgba(20, 160, 152, 0.05), rgba(20, 160, 152, 0.1));
+        }
+        .btn-outline:hover {
+            background: linear-gradient(to bottom, rgba(20, 160, 152, 0.1), rgba(20, 160, 152, 0.15));
+            border-color: #0D7377;
+        }
+
+        /* Card and container styling */
+        #app-container {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #app-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at center, rgba(20, 160, 152, 0.03) 0%, transparent 50%);
+            animation: rotate 30s linear infinite;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Question display styling */
+        #question-display {
+            background: linear-gradient(135deg, rgba(13, 115, 119, 0.05), rgba(20, 160, 152, 0.1));
+            border-left: 4px solid #0D7377;
+            box-shadow: 0 4px 12px rgba(13, 115, 119, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        #question-display:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(13, 115, 119, 0.15);
+        }
+
+        /* Answer button hover effect */
+        .answer-btn:not(:disabled) {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .answer-btn:not(:disabled):hover {
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        /* Category list item styling */
+        #category-list li {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+        }
+        #category-list li:hover {
+            transform: translateY(-3px) scale(1.01);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        /* Title gradient animation */
+        h1.gradient-text {
+            background: linear-gradient(135deg, #0D7377, #14A098, #0D7377);
+            background-size: 200% auto;
+            color: transparent;
+            background-clip: text;
+            -webkit-background-clip: text;
+            animation: gradient 8s ease infinite;
+            position: relative;
+        }
+        h1.gradient-text::after {
+            content: attr(data-text);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.4), transparent);
+            -webkit-background-clip: text;
+            background-clip: text;
+            transform: translateX(-100%);
+            animation: shine 5s infinite;
+        }
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes shine {
+            0% { transform: translateX(-100%); }
+            20%, 100% { transform: translateX(100%); }
+        }
+
+        /* Score display animation */
+        .score-change {
+            animation: scoreUpdate 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes scoreUpdate {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        /* Timer display styling */
+        #timer-display {
+            transition: color 0.3s ease, transform 0.3s ease;
+        }
+        #timer-display.warning {
+            animation: pulse 1s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Progress indicator styling */
+        #progress-indicator {
+            position: relative;
+            display: inline-block;
+        }
+        #progress-indicator::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(to right, #14A098, #0D7377);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+        #progress-indicator:hover::after {
+            transform: scaleX(1);
+        }
+
+        /* Add these new styles after your existing styles */
+
+        /* Toast Notification */
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border-radius: 1rem;
+            padding: 1rem 1.5rem;
+            margin: 0.5rem;
+            max-width: 24rem;
+            pointer-events: auto;
+            transform: translateY(100%);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .toast.success {
+            border-left: 4px solid #10b981;
+        }
+
+        .toast.error {
+            border-left: 4px solid #ef4444;
+        }
+
+        .toast.info {
+            border-left: 4px solid #3b82f6;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast-title {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #1f2937;
+            margin-bottom: 0.25rem;
+        }
+
+        .toast-message {
+            font-size: 0.875rem;
+            color: #4b5563;
+        }
+
+        .toast-progress {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            height: 3px;
+            background: linear-gradient(to right, #10b981, #14A098);
+            border-radius: 0 0 0 4px;
+            transition: width 0.3s linear;
+        }
+
+        /* Full viewport blur for modals */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(45, 52, 54, 0.2);
+            backdrop-filter: blur(8px);
+            z-index: 40;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-backdrop.show {
+            opacity: 1;
+        }
+
+        /* Update modal styles */
+        .modal {
+            background-color: transparent;
+            backdrop-filter: none;
+        }
+
+        /* Add these new styles */
+        .folder-header {
+            background: linear-gradient(135deg, rgba(20, 160, 152, 0.1), rgba(13, 115, 119, 0.05));
+            border: 1px solid rgba(20, 160, 152, 0.2);
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .folder-title {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background-color 0.2s ease;
+            border-radius: 0.375rem;
+        }
+
+        .folder-title:hover {
+            background: rgba(20, 160, 152, 0.1);
+        }
+
+        .folder-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+            padding: 0 1rem;
+        }
+
+        .folder-content.open {
+            max-height: 1000px;
+            padding: 1rem;
+        }
+
+        .folder-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .folder-icon.open {
+            transform: rotate(90deg);
+        }
+
+        .category-actions {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .category-item:hover .category-actions {
+            opacity: 1;
+        }
+
+        /* Edit mode styles */
+        .edit-mode {
+            background: rgba(20, 160, 152, 0.05);
+            border: 2px solid #14A098;
+            border-radius: 0.5rem;
+        }
+
+        .edit-input {
+            background: transparent;
+            border: none;
+            font-size: inherit;
+            font-weight: inherit;
+            width: 100%;
+            padding: 0.25rem;
+            color: inherit;
+        }
+
+        .edit-input:focus {
+            outline: none;
+        }
+
+        /* Update folder styles */
+        .folder-title {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background-color 0.2s ease;
+            border-radius: 0.375rem;
+        }
+
+        .folder-title:hover {
+            background: rgba(20, 160, 152, 0.1);
+        }
+
+        .folder-actions {
+            transition: opacity 0.2s ease;
+        }
+
+        .folder-title:hover .folder-actions {
+            display: flex !important;
+        }
+
+        /* Add a subtle hover effect to folder action buttons */
+        .folder-actions button {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            transition: all 0.2s ease;
+        }
+
+        .folder-actions button:hover {
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .category-item {
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .category-item[draggable=true]:hover {
+            cursor: grab;
+        }
+
+        .category-item[draggable=true]:active {
+            cursor: grabbing;
+        }
+
+        .folder-content.drag-over,
+        #category-list.drag-over {
+            background: rgba(20, 160, 152, 0.1);
+            border: 2px dashed rgba(20, 160, 152, 0.5);
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-brand-lightgray to-gray-100 font-sans text-brand-charcoal min-h-screen flex items-center justify-center p-4 md:p-6">
+
+    <!-- Add this right after the body tag -->
+    <div class="toast-container"></div>
+
+    <!-- Add this before your app container -->
+    <div class="modal-backdrop hidden"></div>
+
+    <div id="app-container" class="w-full max-w-4xl bg-white rounded-xl shadow-card p-8 md:p-12">
+
+        <!-- ========= Landing View ========= -->
+        <div id="landing-view">
+            <h1 class="text-5xl md:text-6xl font-serif font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-purple-600 mb-4 gradient-text">
+                Quizly
+            </h1>
+            <p class="text-xl text-center text-gray-600 mb-10">
+                Prepare yourself to quizz!
+            </p>
+            <div class="flex flex-col items-center space-y-5">
+                <button id="start-quiz-btn" class="btn btn-primary py-3 px-10 text-lg uppercase tracking-wider">
+                    Quizz Me!
+                </button>
+                <button id="go-to-admin-btn" class="btn btn-secondary">
+                    Add a quizle!
+                </button>
+                <!-- Display Total Score -->
+                <div id="total-score-display" class="text-lg font-semibold text-brand-charcoal hidden">
+                    Quizz Points: <span id="total-score-value">0</span>
+                </div>
+                <a href="https://ko-fi.com/cooldev"  
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    class="btn btn-accent inline-block text-center">
+                    ☕ Support the QuizMaster
+                </a> 
+            </div>
+        </div>
+
+        <!-- ========= Admin View (Categories) ========= -->
+        <div id="admin-view" class="hidden">
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-8">
+                 <h2 class="text-4xl font-serif font-bold text-brand-charcoal mb-2 sm:mb-0">Your Quizles</h2>
+                 <button id="back-to-landing-from-admin" class="btn self-start sm:self-center">← Return to the land!</button>
+            </div>
+
+            <div id="category-list-container" class="mb-8 min-h-[150px] p-6 bg-gray-50 border border-brand-subtle rounded-lg shadow-inner">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-brand-charcoal">Your Quizles</h3>
+                    <button id="create-folder-btn" class="btn btn-outline text-sm">
+                        + New Folder
+                    </button>
+                 </div>
+                <div id="category-list-empty" class="text-center text-gray-500 hidden py-10">
+                    <p class="text-3xl mb-4 font-serif">🤔</p>
+                    <p class="font-semibold text-lg mb-1">Your quiz collection awaits!</p>
+                    <p class="text-gray-600">Create your first category to begin.</p>
+                </div>
+                <div id="category-list" class="space-y-4">
+                    <!-- Folders and categories will be dynamically added here -->
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:space-x-4 space-y-3 sm:space-y-0">
+                <button id="show-add-category-modal-btn" class="btn btn-primary flex-1">
+                    + Add New Quizle
+                </button>
+                 <button id="import-category-btn" class="btn flex-1 relative overflow-hidden">
+                    <label class="cursor-pointer w-full h-full absolute inset-0 flex items-center justify-center">
+                         Import Quizle (.json)
+                         <input type="file" id="import-category-input" accept=".json" class="opacity-0 absolute inset-0 w-full h-full cursor-pointer">
+                    </label>
+                    <span class="invisible">Import Category (.json)</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ========= Category Detail View (Questions) ========= -->
+        <div id="category-detail-view" class="hidden">
+             <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-8">
+                 <h2 id="category-detail-title" class="text-4xl font-serif font-bold text-brand-charcoal mb-2 sm:mb-0 truncate" title="Category Name">Category Name</h2>
+                 <button id="back-to-admin-from-detail" class="btn self-start sm:self-center">← Return to your quizles!</button>
+             </div>
+
+             <!-- Add Question Form -->
+            <div class="mb-8 p-6 border border-brand-subtle rounded-lg bg-brand-teal/5 shadow-subtle">
+                 <h3 class="text-2xl font-serif font-semibold mb-5 text-brand-teal">Add New Quiz Item</h3>
+                 <input type="hidden" id="edit-question-id"> <!-- For editing -->
+                 <div class="mb-4">
+                     <label for="question-text-input" class="block text-sm font-medium text-gray-700 mb-1">Question Text</label>
+                     <input type="text" id="question-text-input" placeholder="Enter the question" class="w-full p-3 border border-gray-300 rounded-md focus:ring-brand-teal/50 focus:border-brand-teal bg-white shadow-inner text-base">
+                 </div>
+                 <label class="block text-sm font-medium text-gray-700 mb-1">Correct Answer(s)</label>
+                 <div id="answer-fields-container" class="space-y-3 mb-3">
+                 </div>
+                 <div class="mb-4 flex justify-between items-center">
+                     <button id="add-answer-field-btn" class="text-sm text-brand-teal hover:text-brand-teal-dark font-medium flex items-center">
+                         <span class="text-lg mr-1">+</span> Add Answer Option
+                     </button>
+                     <p id="answer-validation-error" class="text-red-600 text-xs hidden">At least one answer is required.</p>
+                 </div>
+                 <button id="save-question-btn" class="w-full btn btn-primary py-3 text-base"> <!-- Added btn class -->
+                     Save Quiz Item
+                 </button>
+             </div>
+
+              <!-- Question List for this Category -->
+             <div class="mb-8">
+                <h3 class="text-2xl font-serif font-semibold mb-4 text-brand-charcoal">Quiz Items</h3>
+                <div id="question-list-container" class="max-h-80 overflow-y-auto border border-brand-subtle rounded-md p-3 space-y-2 bg-gray-50 shadow-inner">
+                    <p id="no-questions-in-category-message" class="text-gray-500 text-center py-5">No quiz items added to this category yet.</p>
+                </div>
+             </div>
+             <div class="text-center">
+                <button id="play-this-category-btn" class="btn btn-primary py-3 px-10 text-lg uppercase tracking-wider"> <!-- Added btn class -->
+                 Play This Quiz!
+             </button>
+                <p id="play-category-error" class="text-red-600 text-center text-sm mt-3 hidden">You need at least 4 quiz items to play this quiz!</p>
+             </div>
+
+        </div>
+
+        <!-- ========= Quiz Gameplay View ========= -->
+        <div id="quiz-gameplay-view" class="hidden">
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-2">
+                <h2 id="quiz-category-title" class="text-2xl font-serif font-bold text-brand-teal mb-1 sm:mb-0">Playing Category...</h2>
+                <button id="exit-quiz-btn" class="btn !text-red-600 hover:!text-red-800 self-start sm:self-center">Exit Quiz</button>
+            </div>
+            <!-- Progress and Score -->
+            <div class="flex flex-wrap justify-between items-center mb-6 text-sm text-gray-600 bg-brand-subtle p-3 rounded-md shadow-inner">
+                <span id="progress-indicator" class="font-medium">Item X/Y</span>
+                <span id="score-indicator" class="font-bold text-lg text-brand-teal">Score: 0</span>
+                <span id="timer-display" class="font-mono font-semibold text-lg px-2 py-1 rounded"></span>
+            </div>
+            <!-- Question Display -->
+            <div id="question-display" class="text-2xl md:text-3xl font-serif font-semibold mb-8 p-6 bg-brand-teal/10 border-l-4 border-brand-teal rounded-md text-center text-brand-charcoal min-h-[80px] flex items-center justify-center shadow-subtle">
+                Question text goes here...
+            </div>
+            <!-- Answer Buttons -->
+            <div id="answer-buttons" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                <!-- Answer buttons dynamically added here -->
+            </div>
+            <!-- Feedback Area -->
+            <div id="feedback-area" class="min-h-[30px] text-center font-semibold text-lg mb-4"></div>
+             <!-- Correct Answer Reveal -->
+            <div id="correct-answer-reveal" class="text-center text-sm text-gray-600 mb-4 min-h-[20px]"></div>
+            <!-- Next Question Button -->
+            <button id="next-question-btn" class="w-full btn btn-primary py-3 text-base hidden"> <!-- Added btn class -->
+                Continue
+            </button>
+            <!-- Game End View -->
+            <div id="game-end-view" class="hidden text-center mt-10 p-8 bg-green-50 border border-green-200 rounded-lg shadow-subtle">
+                <h2 class="text-3xl font-serif font-bold text-green-700 mb-3">Quiz Complete!</h2>
+                <p id="game-end-message" class="text-lg text-gray-700 mb-5">You've finished the quiz!</p>
+                <p id="final-score" class="text-xl font-semibold text-brand-charcoal mb-6"></p>
+                <p id="mastery-bonus-message" class="text-md font-semibold text-brand-gold-dark mb-5 hidden"></p> <!-- Bonus message -->
+                <div class="flex flex-wrap justify-center gap-4">
+                    <button id="play-again-btn" class="btn btn-primary"> <!-- Added btn class -->
+                        Play Again
+                    </button>
+                    <button id="back-to-categories-from-end-btn" class="btn btn-secondary"> <!-- Added btn class -->
+                        Return to your quizles!
+                    </button>
+                </div>
+            </div>
+            <!-- Quiz Unavailable View -->
+             <div id="quiz-unavailable-view" class="hidden text-center mt-10 p-8 bg-amber-50 border border-amber-200 rounded-lg shadow-subtle">
+                  <p class="text-xl font-serif font-semibold text-amber-800 mb-3">You are empty.</p>
+                  <p class="text-gray-700 mb-5">Wait for your quizles to come back or create new ones!</p>
+                  <button id="back-to-categories-from-unavailable-btn" class="btn btn-secondary">
+                      Return to your quizles!
+                  </button>
+             </div>
+        </div>
+
+        <!-- ========= Modals ========= -->
+
+        <!-- Add Category Modal -->
+        <div id="add-category-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3 class="text-2xl font-serif font-semibold mb-5 text-brand-teal">Create New Quizle</h3>
+                <label for="category-name-input" class="block text-sm font-medium text-gray-700 mb-1">Name your quizle!</label>
+                <input type="text" id="category-name-input" placeholder="e.g., World Capitals Trivia" class="w-full p-3 border border-gray-300 rounded-md mb-1 focus:ring-brand-teal/50 focus:border-brand-teal bg-white shadow-inner text-base">
+                <p id="category-name-error" class="text-red-600 text-xs mt-1 mb-4 hidden">Oh, no! You forgot to name your quizle!</p>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button id="cancel-add-category-btn" class="btn">Cancel</button> <!-- Added btn class -->
+                    <button id="save-category-btn" class="btn btn-primary">Save Quizle</button> <!-- Added btn class -->
+                </div>
+            </div>
+        </div>
+
+         <!-- Category Selection Modal -->
+         <div id="category-selection-modal" class="modal hidden">
+             <div class="modal-content">
+                 <h3 class="text-2xl font-serif font-semibold mb-5 text-brand-teal">Choose What to Quiz</h3>
+                 <div class="flex flex-col items-center justify-center py-8">
+                     <p id="no-playable-categories-msg" class="text-xl font-serif font-semibold text-gray-700 text-center hidden">You are empty.<br>Wait for your quizles to come back or create a new one!</p>
+                     <div id="quiz-selection-content" class="w-full">
+                         <div id="folders-section" class="mb-4">
+                             <div class="text-sm font-medium text-gray-600 mb-2">Available Folders</div>
+                             <div id="playable-folder-list" class="space-y-2 mb-4">
+                                 <!-- Folders will be added here -->
+                             </div>
+                         </div>
+                         <div id="categories-section" class="mb-4">
+                             <div class="text-sm font-medium text-gray-600 mb-2">Individual Quizles</div>
+                             <div id="playable-category-list" class="max-h-72 overflow-y-auto -mx-4 px-4 space-y-2">
+                                 <!-- Individual categories will be added here -->
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+                 <div class="flex justify-end">
+                     <button id="cancel-select-category-btn" class="btn btn-subtle">Cancel</button>
+                 </div>
+             </div>
+         </div>
+
+        <!-- Add this new modal for folder creation/editing -->
+        <div id="folder-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3 class="text-2xl font-serif font-semibold mb-5 text-brand-teal">Create New Folder</h3>
+                <label for="folder-name-input" class="block text-sm font-medium text-gray-700 mb-1">Folder Name</label>
+                <input type="text" id="folder-name-input" placeholder="e.g., Languages, Math, Science" class="w-full p-3 border border-gray-300 rounded-md mb-1 focus:ring-brand-teal/50 focus:border-brand-teal bg-white shadow-inner text-base">
+                <p id="folder-name-error" class="text-red-600 text-xs mt-1 mb-4 hidden">Please enter a folder name</p>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button id="cancel-folder-btn" class="btn">Cancel</button>
+                    <button id="save-folder-btn" class="btn btn-primary">Create Folder</button>
+                 </div>
+             </div>
+         </div>
+
+    </div><!-- /#app-container -->
+
+    <!-- ========= Audio Elements ========= -->
+    <audio id="audio-bg" src="background.mp3" preload="auto" loop></audio>
+    <audio id="audio-click" src="click.mp3" preload="auto"></audio>
+    <audio id="audio-correct" src="correct.mp3" preload="auto"></audio>
+    <audio id="audio-wrong" src="wrong.mp3" preload="auto"></audio>
+    <audio id="audio-congrats" src="congrats.mp3" preload="auto"></audio>
+
+    <script>
+    // Add this to your existing JavaScript, before your other code
+    const toastContainer = document.querySelector('.toast-container');
+    const modalBackdrop = document.querySelector('.modal-backdrop');
+
+    function showToast(title, message, type = 'info', duration = 3000) {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        toast.innerHTML = `
+            <div class="toast-title">${title}</div>
+            <div class="toast-message">${message}</div>
+            <div class="toast-progress" style="width: 100%"></div>
+        `;
+        
+        toastContainer.appendChild(toast);
+        
+        // Trigger reflow
+        toast.offsetHeight;
+        
+        // Show toast
+        toast.classList.add('show');
+        
+        // Animate progress bar
+        const progress = toast.querySelector('.toast-progress');
+        progress.style.width = '0';
+        progress.style.transition = `width ${duration}ms linear`;
+        
+        // Remove toast after duration
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+    }
+
+    // Update your modal toggle function
+    function toggleModal(modalElement, show) {
+        if (!modalElement) {
+            console.error("Modal element is null or undefined.");
+            return;
+        }
+        
+        if (show) {
+            modalElement.classList.remove('hidden');
+            modalBackdrop.classList.remove('hidden');
+            setTimeout(() => modalBackdrop.classList.add('show'), 0);
+        } else {
+            modalElement.classList.add('hidden');
+            modalBackdrop.classList.remove('show');
+            setTimeout(() => modalBackdrop.classList.add('hidden'), 300);
+        }
+    }
+
+    // Replace alert calls with showToast
+    function importCategory(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        if (file.type !== 'application/json') {
+            showToast('Invalid File', 'Please select a valid JSON file (.json)', 'error');
+            importCategoryInput.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if (!importedData || typeof importedData.name !== 'string' || !Array.isArray(importedData.questions)) {
+                    throw new Error("Invalid category JSON structure.");
+                }
+
+                const newCategory = {
+                    id: Date.now(),
+                    name: importedData.name,
+                    folderId: null,
+                    questions: []
+                };
+
+                importedData.questions.forEach(q => {
+                    if (q && typeof q.text === 'string' && Array.isArray(q.answers) && q.answers.length > 0) {
+                        newCategory.questions.push({
+                            id: Date.now() + Math.random(),
+                            text: q.text,
+                            answers: q.answers.map(String).filter(ans => ans.trim() !== ''),
+                            correctCount: 0,
+                            masteredTimestamp: null
+                        });
+                    } else {
+                        console.warn("Skipping invalid question during import:", q);
+                    }
+                });
+
+                if (newCategory.questions.length > 0) {
+                    categories.push(newCategory);
+                    saveData();
+                    displayCategoryList();
+                    showToast('Import Successful', `Quizle "${newCategory.name}" imported with ${newCategory.questions.length} questions!`, 'success');
+                } else {
+                    showToast('Import Warning', `Quizle "${newCategory.name}" imported, but contained no valid questions.`, 'info');
+                }
+
+            } catch (error) {
+                console.error("Failed to import category:", error);
+                showToast('Import Failed', `Error importing file: ${error.message}`, 'error');
+            } finally {
+                importCategoryInput.value = '';
+            }
+        };
+        reader.onerror = () => {
+            showToast('Error', 'Error reading the selected file.', 'error');
+            importCategoryInput.value = '';
+        };
+        reader.readAsText(file);
+    }
+
+    // Update other alert calls throughout your code
+    function deleteCategory(categoryId) {
+        const categoryToDelete = categories.find(cat => cat.id === categoryId);
+        if (!categoryToDelete) return;
+
+        if (confirm(`Are you sure you want to delete the quizle "${categoryToDelete.name}" and all its questions? This cannot be undone.`)) {
+            categories = categories.filter(cat => cat.id !== categoryId);
+            saveData();
+            displayCategoryList();
+            if (currentView === 'category-detail' && currentCategoryId === categoryId) {
+                showView('admin');
+                currentCategoryId = null;
+            }
+            showToast('Quizle Deleted', `"${categoryToDelete.name}" has been deleted.`, 'info');
+        }
+    }
+
+    function deleteQuestion(questionId) {
+        const category = categories.find(cat => cat.id === currentCategoryId);
+        if (!category) return;
+
+        const questionIndex = category.questions.findIndex(q => q.id === questionId);
+        if (questionIndex === -1) {
+            showToast('Error', 'Question not found for deletion.', 'error');
+            return;
+        }
+
+        if (confirm(`Are you sure you want to delete this question?\n\n"${category.questions[questionIndex].text}"`)) {
+            category.questions.splice(questionIndex, 1);
+            saveData();
+            displayQuestionListForCategory();
+            checkPlayability();
+            displayCategoryList();
+            if (editQuestionIdInput.value && Number(editQuestionIdInput.value) === questionId) {
+                resetQuestionForm();
+            }
+            showToast('Question Deleted', 'The question has been deleted.', 'info');
+        }
+    }
+
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Configuration Constants ---
+    const MIN_QUESTIONS_TO_PLAY = 4;
+        const MAX_ANSWERS_PER_QUESTION = 4;
+    const CORRECT_ANSWER_GOAL = 3;
+        const CORRECT_QUESTION_SKIP_COUNT = 3;
+        const INCORRECT_QUESTION_SKIP_COUNT = 1;
+    const MASTERED_COOLDOWN_MS = 3 * 60 * 60 * 1000; // 3 hours
+    const TIMER_DURATION = 25; // seconds
+        const MASTERY_BONUS_POINTS = 10;
+
+    // --- State Variables ---
+    let categories = [];
+    let currentView = 'landing';
+    let currentCategoryId = null;
+    let currentQuizQuestions = [];
+    let quizState = {
+        currentQuestionIndex: -1,
+        score: 0,
+            recentCorrect: [],
+            incorrectQueue: [],
+        timerInterval: null,
+        timerValue: TIMER_DURATION,
+        quizActive: false,
+        originalCategoryQuestionCount: 0
+    };
+        let totalUserPoints = 0;
+        let isBgMusicPlaying = false; // <<< NEW: Track background music state
+        let userInteracted = false; // <<< NEW: Track if user has interacted
+        let folders = [];
+        let editingId = null;
+
+    // --- DOM Element References ---
+        // ... (keep all existing DOM references) ...
+    const appContainer = document.getElementById('app-container');
+    const landingView = document.getElementById('landing-view');
+    const adminView = document.getElementById('admin-view');
+    const categoryDetailView = document.getElementById('category-detail-view');
+    const quizGameplayView = document.getElementById('quiz-gameplay-view');
+    const addCategoryModal = document.getElementById('add-category-modal');
+    const categorySelectionModal = document.getElementById('category-selection-modal');
+    const startQuizBtn = document.getElementById('start-quiz-btn');
+    const goToAdminBtn = document.getElementById('go-to-admin-btn');
+    const backToLandingFromAdmin = document.getElementById('back-to-landing-from-admin');
+    const categoryListContainer = document.getElementById('category-list-container');
+    const categoryListUl = document.getElementById('category-list');
+    const categoryListEmpty = document.getElementById('category-list-empty');
+    const showAddCategoryModalBtn = document.getElementById('show-add-category-modal-btn');
+    const importCategoryBtn = document.getElementById('import-category-btn');
+    const importCategoryInput = document.getElementById('import-category-input');
+    const categoryNameInput = document.getElementById('category-name-input');
+    const categoryNameError = document.getElementById('category-name-error');
+    const saveCategoryBtn = document.getElementById('save-category-btn');
+    const cancelAddCategoryBtn = document.getElementById('cancel-add-category-btn');
+    const backToAdminFromDetail = document.getElementById('back-to-admin-from-detail');
+    const categoryDetailTitle = document.getElementById('category-detail-title');
+    const questionTextInput = document.getElementById('question-text-input');
+    const answerFieldsContainer = document.getElementById('answer-fields-container');
+    const addAnswerFieldBtn = document.getElementById('add-answer-field-btn');
+    const saveQuestionBtn = document.getElementById('save-question-btn');
+    const questionListContainer = document.getElementById('question-list-container');
+    const noQuestionsInCategoryMsg = document.getElementById('no-questions-in-category-message');
+    const playThisCategoryBtn = document.getElementById('play-this-category-btn');
+    const playCategoryError = document.getElementById('play-category-error');
+    const editQuestionIdInput = document.getElementById('edit-question-id');
+    const answerValidationError = document.getElementById('answer-validation-error');
+    const quizCategoryTitle = document.getElementById('quiz-category-title');
+    const exitQuizBtn = document.getElementById('exit-quiz-btn');
+    const progressIndicator = document.getElementById('progress-indicator');
+    const scoreIndicator = document.getElementById('score-indicator');
+    const timerDisplay = document.getElementById('timer-display');
+    const questionDisplay = document.getElementById('question-display');
+    const answerButtonsDiv = document.getElementById('answer-buttons');
+    const feedbackArea = document.getElementById('feedback-area');
+    const correctAnswerReveal = document.getElementById('correct-answer-reveal');
+    const nextQuestionBtn = document.getElementById('next-question-btn');
+    const gameEndView = document.getElementById('game-end-view');
+    const gameEndMessage = document.getElementById('game-end-message');
+    const finalScoreDisplay = document.getElementById('final-score');
+        const masteryBonusMessage = document.getElementById('mastery-bonus-message');
+    const playAgainBtn = document.getElementById('play-again-btn');
+    const backToCategoriesFromEndBtn = document.getElementById('back-to-categories-from-end-btn');
+    const quizUnavailableView = document.getElementById('quiz-unavailable-view');
+    const backToCategoriesFromUnavailableBtn = document.getElementById('back-to-categories-from-unavailable-btn');
+    const playableCategoryList = document.getElementById('playable-category-list');
+    const noPlayableCategoriesMsg = document.getElementById('no-playable-categories-msg');
+    const cancelSelectCategoryBtn = document.getElementById('cancel-select-category-btn');
+        const totalScoreDisplay = document.getElementById('total-score-display');
+        const totalScoreValue = document.getElementById('total-score-value');
+
+        // <<< NEW: Audio Element References >>>
+        const audioBg = document.getElementById('audio-bg');
+        const audioClick = document.getElementById('audio-click');
+        const audioCorrect = document.getElementById('audio-correct');
+        const audioWrong = document.getElementById('audio-wrong');
+        const audioCongrats = document.getElementById('audio-congrats');
+
+    // --- Utility Functions ---
+    const hideElement = (el) => el?.classList.add('hidden');
+    const showElement = (el) => el?.classList.remove('hidden');
+    const toggleModal = (modalElement, show) => {
+        if (!modalElement) {
+            console.error("Modal element is null or undefined.");
+            return;
+        }
+        if (show) {
+            modalElement.classList.remove('hidden');
+        } else {
+            modalElement.classList.add('hidden');
+        }
+    };
+    const toggleElement = (el, show) => {
+        if (show) showElement(el);
+        else hideElement(el);
+    };
+
+        // <<< NEW: Audio Playback Function >>>
+        function playSound(audioElement) {
+            if (!audioElement) {
+                 console.warn("Attempted to play null audio element");
+                 return;
+            }
+            // Only play if user has interacted (or for BG music special case)
+            if (!userInteracted && audioElement !== audioBg) return;
+
+            audioElement.currentTime = 0; // Rewind to start
+            audioElement.play().catch(error => {
+                // Log errors, especially for autoplay restrictions
+                // console.warn(`Audio playback failed for ${audioElement.id}:`, error.message);
+                 // Don't alert, just log. User might have audio blocked.
+            });
+        }
+
+        // <<< NEW: Function to Start Background Music >>>
+        function startBackgroundMusic() {
+            if (!isBgMusicPlaying && audioBg) {
+                audioBg.volume = 0.3; // Optional: Set volume (0.0 to 1.0)
+                audioBg.play().then(() => {
+                    isBgMusicPlaying = true;
+                    // console.log("Background music started.");
+                }).catch(error => {
+                    console.warn("Background music auto-play failed. Needs user interaction.", error.message);
+                    // We'll rely on the interaction listener to try again
+                });
+            }
+        }
+
+        // <<< NEW: Handle first user interaction >>>
+        function handleFirstInteraction() {
+            if (!userInteracted) {
+                userInteracted = true;
+                // console.log("User interacted, enabling audio.");
+                // Try starting BG music again if it failed initially
+                startBackgroundMusic();
+            }
+        }
+
+    // --- View Management ---
+        // ... (keep existing showView function) ...
+    function showView(viewId) {
+        const views = {
+            'landing': landingView,
+            'admin': adminView,
+            'category-detail': categoryDetailView,
+            'quiz': quizGameplayView
+        };
+        const viewToShow = views[viewId];
+        if (!viewToShow) {
+            console.error("View not found for ID:", viewId);
+            alert("Error: Cannot switch to requested view. Returning to landing page.");
+            if (currentView !== 'landing') {
+                [landingView, adminView, categoryDetailView, quizGameplayView].forEach(hideElement);
+                showElement(landingView);
+                currentView = 'landing';
+            }
+            return;
+        }
+        [landingView, adminView, categoryDetailView, quizGameplayView].forEach(hideElement);
+        showElement(viewToShow);
+        currentView = viewId;
+    }
+
+    // --- Persistence ---
+        // ... (keep existing loadData, saveData, updateTotalScoreDisplay functions) ...
+        function loadData() {
+            try {
+                // Load Categories and Folders
+                const storedCategories = localStorage.getItem('quizAppCategories');
+                const storedFolders = localStorage.getItem('quizAppFolders');
+                const storedPoints = localStorage.getItem('quizAppTotalPoints');
+                
+                // Initialize categories
+                categories = storedCategories ? JSON.parse(storedCategories) : [];
+            if (!Array.isArray(categories)) categories = [];
+                
+                // Initialize folders
+                folders = storedFolders ? JSON.parse(storedFolders) : [];
+                if (!Array.isArray(folders)) folders = [];
+                
+                // Initialize total points
+                totalUserPoints = storedPoints ? parseInt(storedPoints, 10) : 0;
+                if (isNaN(totalUserPoints)) totalUserPoints = 0;
+                
+                // Validate folders
+                folders.forEach(folder => {
+                    if (!folder.id) folder.id = Date.now() + Math.random();
+                    if (!folder.name) folder.name = "Untitled Folder";
+                    if (!Array.isArray(folder.categoryIds)) folder.categoryIds = [];
+                });
+
+                // Validate categories and their questions
+            categories.forEach(cat => {
+                if (!cat.id) cat.id = Date.now() + Math.random();
+                if (!cat.name) cat.name = "Untitled Category";
+                if (!Array.isArray(cat.questions)) cat.questions = [];
+                    if (cat.folderId === undefined) cat.folderId = null;
+                    
+                cat.questions.forEach(q => {
+                    if (!q.id) q.id = Date.now() + Math.random();
+                    if (!q.text) q.text = "Untitled Question";
+                    if (!Array.isArray(q.answers)) q.answers = ["Default Answer"];
+                    if (q.correctCount === undefined) q.correctCount = 0;
+                    if (q.masteredTimestamp === undefined) q.masteredTimestamp = null;
+                });
+            });
+
+                // Update total score display
+                updateTotalScoreDisplay();
+                
+        } catch (error) {
+                console.error("Error loading data from localStorage:", error);
+            categories = [];
+                folders = [];
+                totalUserPoints = 0;
+                showToast('Error', 'Could not load saved data. Starting fresh.', 'error');
+        }
+    }
+
+        function saveData() {
+        try {
+                // Save categories and folders
+            localStorage.setItem('quizAppCategories', JSON.stringify(categories));
+                localStorage.setItem('quizAppFolders', JSON.stringify(folders));
+                
+                // Save total points
+                localStorage.setItem('quizAppTotalPoints', totalUserPoints.toString());
+        } catch (error) {
+                console.error("Error saving to localStorage:", error);
+                showToast('Error', 'Could not save changes. Storage might be full.', 'error');
+            }
+        }
+
+         // <<< NEW: Function to update total score display >>>
+         function updateTotalScoreDisplay() {
+            if (totalUserPoints > 0) {
+                totalScoreValue.textContent = totalUserPoints;
+                showElement(totalScoreDisplay);
+            } else {
+                hideElement(totalScoreDisplay);
+        }
+    }
+
+    // --- Category Management ---
+        // ... (keep displayCategoryList, handleAddCategory, deleteCategory, exportCategory, importCategory) ...
+    function displayCategoryList() {
+            const container = document.getElementById('category-list');
+            container.innerHTML = '';
+            
+            if (categories.length === 0 && folders.length === 0) {
+                showElement(document.getElementById('category-list-empty'));
+                return;
+            }
+            
+            hideElement(document.getElementById('category-list-empty'));
+
+            // Display folders first
+            folders.forEach(folder => {
+                const folderDiv = document.createElement('div');
+                folderDiv.className = 'folder-header';
+                
+                const folderCategories = categories.filter(cat => cat.folderId === folder.id);
+                
+                folderDiv.innerHTML = `
+                    <div class="folder-title group" data-folder-id="${folder.id}">
+                        <div class="flex items-center flex-1">
+                            <span class="folder-icon mr-2">▶</span>
+                            <span class="folder-name">${folder.name}</span>
+                        </div>
+                        <div class="folder-actions hidden group-hover:flex items-center space-x-2">
+                            <button class="rename-folder-btn text-xs text-blue-600 hover:text-blue-800 font-medium">Rename</button>
+                            <button class="delete-folder-btn text-xs text-red-600 hover:text-red-800 font-medium">Delete</button>
+                        </div>
+                    </div>
+                    <div class="folder-content">
+                        <div class="space-y-2 category-container">
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(folderDiv);
+                
+                // Add folder event listeners
+                const titleDiv = folderDiv.querySelector('.folder-title');
+                const contentDiv = folderDiv.querySelector('.folder-content');
+                const folderIcon = folderDiv.querySelector('.folder-icon');
+                const categoryContainer = contentDiv.querySelector('.category-container');
+                
+                // Toggle folder open/close
+                titleDiv.addEventListener('click', (e) => {
+                    if (!e.target.closest('button')) {
+                        contentDiv.classList.toggle('open');
+                        folderIcon.classList.toggle('open');
+                    }
+                });
+                
+                // Add categories to the folder
+                folderCategories.forEach(cat => {
+                    const categoryElement = createCategoryElement(cat);
+                    categoryContainer.appendChild(categoryElement);
+                });
+                
+                // Folder rename handler
+                const renameBtn = folderDiv.querySelector('.rename-folder-btn');
+                renameBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const newName = prompt('Enter new folder name:', folder.name);
+                    if (newName && newName.trim()) {
+                        renameFolder(folder.id, newName.trim());
+                    }
+                });
+                
+                // Folder delete handler
+                const deleteBtn = folderDiv.querySelector('.delete-folder-btn');
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteFolder(folder.id);
+                });
+            });
+
+            // Display uncategorized categories
+            const uncategorizedCategories = categories.filter(cat => !cat.folderId);
+            uncategorizedCategories.forEach(cat => {
+                container.appendChild(createCategoryElement(cat));
+            });
+
+            // Add drag and drop functionality
+            setupDragAndDrop();
+        }
+    function handleAddCategory() {
+        const name = categoryNameInput.value.trim();
+        if (!name) {
+            showElement(categoryNameError);
+            categoryNameInput.focus();
+            return;
+        }
+        hideElement(categoryNameError);
+
+        const newCategory = {
+                id: Date.now(),
+            name: name,
+            questions: []
+        };
+        categories.push(newCategory);
+            saveData(); // Use combined save function
+        displayCategoryList();
+        toggleModal(addCategoryModal, false);
+            categoryNameInput.value = '';
+    }
+    function deleteCategory(categoryId) {
+        const categoryToDelete = categories.find(cat => cat.id === categoryId);
+        if (!categoryToDelete) return;
+
+            if (confirm(`Are you sure you want to delete the quizle "${categoryToDelete.name}" and all its questions? This cannot be undone.`)) {
+            categories = categories.filter(cat => cat.id !== categoryId);
+                saveData();
+            displayCategoryList();
+            if (currentView === 'category-detail' && currentCategoryId === categoryId) {
+                showView('admin');
+                currentCategoryId = null;
+            }
+        }
+    }
+    function exportCategory(categoryId) {
+        const category = categories.find(cat => cat.id === categoryId);
+        if (!category) {
+            alert("Error: Category not found for export.");
+            return;
+        }
+        const filename = `${category.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'quiz_category'}_export.json`;
+            const jsonString = JSON.stringify(category, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+            document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+    }
+    function importCategory(event) {
+        const file = event.target.files[0];
+            if (!file) return;
+        if (file.type !== 'application/json') {
+            alert('Please select a valid JSON file (.json).');
+                importCategoryInput.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if (!importedData || typeof importedData.name !== 'string' || !Array.isArray(importedData.questions)) {
+                        throw new Error("Invalid category JSON structure.");
+                }
+
+                const newCategory = {
+                        id: Date.now(),
+                    name: importedData.name,
+                        folderId: null,
+                    questions: []
+                };
+
+                importedData.questions.forEach(q => {
+                    if (q && typeof q.text === 'string' && Array.isArray(q.answers) && q.answers.length > 0) {
+                        newCategory.questions.push({
+                                id: Date.now() + Math.random(),
+                            text: q.text,
+                                answers: q.answers.map(String).filter(ans => ans.trim() !== ''),
+                                correctCount: 0,
+                                masteredTimestamp: null
+                        });
+                    } else {
+                        console.warn("Skipping invalid question during import:", q);
+                    }
+                });
+
+                if (newCategory.questions.length > 0) {
+                     categories.push(newCategory);
+                         saveData(); // Use combined save function
+                     displayCategoryList();
+                     alert(`Category "${newCategory.name}" imported successfully with ${newCategory.questions.length} questions!`);
+                } else {
+                    alert(`Category "${newCategory.name}" imported, but contained no valid questions.`);
+                }
+
+            } catch (error) {
+                console.error("Failed to import category:", error);
+                alert(`Error importing file: ${error.message}`);
+            } finally {
+                    importCategoryInput.value = '';
+            }
+        };
+        reader.onerror = () => {
+            alert("Error reading the selected file.");
+            importCategoryInput.value = '';
+        };
+        reader.readAsText(file);
+    }
+
+    // --- Category Detail (Question Management) ---
+        // ... (keep showCategoryDetail, resetQuestionForm, addAnswerField, updateAnswerPlaceholders, handleSaveQuestion, displayQuestionListForCategory, populateQuestionFormForEdit, deleteQuestion, checkPlayability) ...
+    function showCategoryDetail(categoryId) {
+        const category = categories.find(cat => cat.id === categoryId);
+        if (!category) {
+            console.error("Category not found:", categoryId);
+            alert("Error: Could not find the selected category.");
+                showView('admin');
+            return;
+        }
+        currentCategoryId = categoryId;
+        categoryDetailTitle.textContent = category.name;
+            resetQuestionForm();
+        displayQuestionListForCategory();
+        showView('category-detail');
+            checkPlayability();
+    }
+    function resetQuestionForm() {
+            editQuestionIdInput.value = '';
+        questionTextInput.value = '';
+            answerFieldsContainer.innerHTML = '';
+            addAnswerField(); // Add initial field
+        hideElement(answerValidationError);
+        saveQuestionBtn.textContent = 'Save Quiz Item';
+        saveQuestionBtn.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
+            // Make sure it uses the base btn and btn-primary styles
+            saveQuestionBtn.classList.add('btn', 'btn-primary');
+            // Ensure add button is visible initially
+            showElement(addAnswerFieldBtn);
+            addAnswerFieldBtn.disabled = false;
+            addAnswerFieldBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    function addAnswerField(answerValue = '') {
+        const currentAnswerCount = answerFieldsContainer.children.length;
+        if (currentAnswerCount >= MAX_ANSWERS_PER_QUESTION) {
+                 console.warn("Max answer fields reached."); // Log instead of hiding button abruptly
+                 // Optionally disable the button
+                 addAnswerFieldBtn.disabled = true;
+                 addAnswerFieldBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            return;
+        }
+
+        const fieldIndex = currentAnswerCount + 1;
+        const div = document.createElement('div');
+        div.className = 'flex items-center space-x-2 answer-field-wrapper';
+        div.innerHTML = `
+            <label for="answer-input-${fieldIndex}" class="sr-only">Answer ${fieldIndex}</label>
+                <input type="text" id="answer-input-${fieldIndex}" value="${answerValue}" placeholder="Correct Answer ${fieldIndex}" class="flex-grow p-2 border border-gray-300 rounded-md focus:ring-brand-teal/50 focus:border-brand-teal answer-input bg-white shadow-inner">
+                ${fieldIndex > 1 ? '<button type="button" class="remove-answer-btn text-red-500 hover:text-red-700 text-sm font-semibold p-1 leading-none flex-shrink-0" title="Remove Answer">✖</button>' : '<span class="w-[28px] flex-shrink-0"></span>' /* Placeholder for alignment */}
+            `; // Added placeholder span for alignment
+
+        const removeBtn = div.querySelector('.remove-answer-btn');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', () => {
+                     // playSound(audioClick); // Click for remove button
+                    div.remove();
+                    // Re-enable add button if below limit
+                    if (answerFieldsContainer.children.length < MAX_ANSWERS_PER_QUESTION) {
+                         addAnswerFieldBtn.disabled = false;
+                         addAnswerFieldBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                     }
+                    updateAnswerPlaceholders();
+            });
+        }
+        answerFieldsContainer.appendChild(div);
+
+            // Disable add button if limit reached *after* adding
+        if (answerFieldsContainer.children.length >= MAX_ANSWERS_PER_QUESTION) {
+                 addAnswerFieldBtn.disabled = true;
+                 addAnswerFieldBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+
+        div.querySelector('input')?.focus();
+    }
+    function updateAnswerPlaceholders() {
+        answerFieldsContainer.querySelectorAll('.answer-field-wrapper').forEach((div, index) => {
+            const input = div.querySelector('.answer-input');
+            const fieldIndex = index + 1;
+            if(input) {
+                input.placeholder = `Correct Answer ${fieldIndex}`;
+                    input.id = `answer-input-${fieldIndex}`;
+                const label = div.querySelector('label');
+                if (label) label.setAttribute('for', input.id);
+            }
+        });
+    }
+    function handleSaveQuestion() {
+        const category = categories.find(cat => cat.id === currentCategoryId);
+        if (!category) {
+                showToast('Error', 'Current category not found.', 'error');
+            return;
+        }
+
+        const questionText = questionTextInput.value.trim();
+        const answerInputs = answerFieldsContainer.querySelectorAll('.answer-input');
+        const answers = Array.from(answerInputs)
+                            .map(input => input.value.trim())
+                                .filter(ans => ans !== '');
+
+        if (!questionText) {
+                showToast('Error', 'Please enter the question text.', 'error');
+            questionTextInput.focus();
+            return;
+        }
+        if (answers.length === 0) {
+            showElement(answerValidationError);
+                answerInputs[0]?.focus();
+            return;
+        }
+            hideElement(answerValidationError);
+
+        const editId = editQuestionIdInput.value ? Number(editQuestionIdInput.value) : null;
+
+            if (editId) {
+            const questionIndex = category.questions.findIndex(q => q.id === editId);
+            if (questionIndex !== -1) {
+                category.questions[questionIndex].text = questionText;
+                category.questions[questionIndex].answers = answers;
+                    showToast('Success', 'Question updated successfully!', 'success');
+            } else {
+                    showToast('Error', 'Could not find the question to update.', 'error');
+                    return;
+            }
+            } else {
+            const newQuestion = {
+                    id: Date.now() + Math.random(),
+                text: questionText,
+                answers: answers,
+                    correctCount: 0,
+                masteredTimestamp: null
+            };
+            category.questions.push(newQuestion);
+                showToast('Success', 'New question added successfully!', 'success');
+            }
+
+            saveData();
+            displayQuestionListForCategory();
+            resetQuestionForm();
+            checkPlayability();
+            displayCategoryList();
+        }
+    function displayQuestionListForCategory() {
+        const category = categories.find(cat => cat.id === currentCategoryId);
+        const container = questionListContainer;
+            container.innerHTML = '';
+
+        if (!category || category.questions.length === 0) {
+            toggleElement(noQuestionsInCategoryMsg, true);
+                if (!container.contains(noQuestionsInCategoryMsg)) {
+                 container.appendChild(noQuestionsInCategoryMsg);
+             }
+        } else {
+             toggleElement(noQuestionsInCategoryMsg, false);
+            category.questions.forEach((q, index) => {
+                const div = document.createElement('div');
+                div.className = 'p-2 border-b border-gray-200 flex justify-between items-start text-sm group';
+                    const isMastered = q.correctCount >= CORRECT_ANSWER_GOAL;
+                    const cooldownActive = isMastered && q.masteredTimestamp !== null && (Date.now() - q.masteredTimestamp) <= MASTERED_COOLDOWN_MS;
+
+                    let progressText;
+                    let cooldownText = '';
+                    if (isMastered) {
+                        if (cooldownActive && q.masteredTimestamp) {
+                            const remainingTime = q.masteredTimestamp + MASTERED_COOLDOWN_MS - Date.now();
+                            const hours = Math.floor(remainingTime / (60 * 60 * 1000));
+                            const minutes = Math.floor((remainingTime % (60 * 60 * 1000)) / (60 * 1000));
+                            cooldownText = ` (Ready in ${hours}h ${minutes}m)`;
+                        }
+                        progressText = `<span class="text-xs ${cooldownActive ? 'text-gray-500' : 'text-green-600'} ml-4 block sm:inline">✓ Mastered${cooldownText}</span>`;
+                    } else {
+                        progressText = `<span class="text-xs text-blue-600 ml-4 block sm:inline">Progress: ${q.correctCount}/${CORRECT_ANSWER_GOAL}</span>`;
+                    }
+
+                div.innerHTML = `
+                        <div class="flex-1 mr-2 min-w-0">
+                        <p class="font-medium truncate" title="${q.text}">${index + 1}. ${q.text}</p>
+                        <p class="text-xs text-gray-500 ml-4 truncate" title="Answers: ${q.answers.join(', ')}">Answers: ${q.answers.join(', ')}</p>
+                            ${progressText}
+                    </div>
+                    <div class="opacity-0 group-hover:opacity-100 transition-opacity space-x-2 flex-shrink-0">
+                        <button data-action="edit" data-id="${q.id}" class="text-xs text-blue-600 hover:text-blue-800 font-semibold">Edit</button>
+                        <button data-action="delete" data-id="${q.id}" class="text-xs text-red-600 hover:text-red-800 font-semibold">Delete</button>
+                    </div>
+                `;
+                    div.querySelector('[data-action="edit"]').addEventListener('click', () => {
+                        // playSound(audioClick); // Click for edit
+                        populateQuestionFormForEdit(q.id);
+                        });
+                    div.querySelector('[data-action="delete"]').addEventListener('click', () => {
+                        // playSound(audioClick); // Click for delete
+                        deleteQuestion(q.id);
+                        });
+                container.appendChild(div);
+            });
+        }
+    }
+    function populateQuestionFormForEdit(questionId) {
+        const category = categories.find(cat => cat.id === currentCategoryId);
+        if (!category) return;
+        const question = category.questions.find(q => q.id === questionId);
+        if (!question) {
+             alert("Error: Could not find the question to edit.");
+                 return;
+        };
+
+        editQuestionIdInput.value = question.id;
+        questionTextInput.value = question.text;
+            answerFieldsContainer.innerHTML = '';
+        hideElement(answerValidationError);
+            question.answers.forEach(ans => addAnswerField(ans));
+
+        saveQuestionBtn.textContent = 'Update Quiz Item';
+            saveQuestionBtn.classList.remove('btn-primary'); // Remove primary
+            saveQuestionBtn.classList.add('bg-yellow-500', 'hover:bg-yellow-600', 'text-white', 'btn'); // Add edit specific style + btn
+
+            questionTextInput.focus();
+            const formContainer = questionTextInput.closest('.bg-brand-teal\\/5'); // Adjusted selector
+        formContainer?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    function deleteQuestion(questionId) {
+        const category = categories.find(cat => cat.id === currentCategoryId);
+        if (!category) return;
+
+        const questionIndex = category.questions.findIndex(q => q.id === questionId);
+        if (questionIndex === -1) {
+            alert("Error: Question not found for deletion.");
+            return;
+        };
+
+        if (confirm(`Are you sure you want to delete this question?\n\n"${category.questions[questionIndex].text}"`)) {
+                category.questions.splice(questionIndex, 1);
+                saveData(); // Use combined save function
+                displayQuestionListForCategory();
+                checkPlayability();
+                displayCategoryList(); // Update category count
+                // Reset form only if the deleted question was being edited
+                if (editQuestionIdInput.value && Number(editQuestionIdInput.value) === questionId) {
+                     resetQuestionForm();
+                }
+            }
+        }
+    function checkPlayability() {
+        const category = categories.find(cat => cat.id === currentCategoryId);
+        const canPlay = category && category.questions.length >= MIN_QUESTIONS_TO_PLAY;
+
+        playThisCategoryBtn.disabled = !canPlay;
+        playThisCategoryBtn.classList.toggle('opacity-50', !canPlay);
+        playThisCategoryBtn.classList.toggle('cursor-not-allowed', !canPlay);
+            toggleElement(playCategoryError, !canPlay && category);
+    }
+
+    // --- Quiz Gameplay Logic ---
+        // ... (keep showCategorySelectionModal, startQuiz, isQuestionEligible, selectNextQuestion, displayQuestion) ...
+    function showCategorySelectionModal() {
+        if (!categorySelectionModal) {
+            console.error("Category Selection Modal element not found!");
+            showToast('Error', 'Cannot open category selection.', 'error');
+            return;
+        }
+
+        const folderList = document.getElementById('playable-folder-list');
+        const categoryList = document.getElementById('playable-category-list');
+        const noPlayableMsg = document.getElementById('no-playable-categories-msg');
+        const quizContent = document.getElementById('quiz-selection-content');
+        const foldersSection = document.getElementById('folders-section');
+        const categoriesSection = document.getElementById('categories-section');
+        
+        folderList.innerHTML = '';
+        categoryList.innerHTML = '';
+        
+        const now = Date.now();
+        let playableFound = false;
+        let hasFolders = folders.length > 0;
+        let hasCategories = categories.length > 0;
+
+        // Add folders first
+        folders.forEach(folder => {
+            const status = getFolderPlayableStatus(folder.id);
+            if (status.isPlayable) {
+                playableFound = true;
+                const btn = document.createElement('button');
+                btn.className = 'btn block w-full text-left p-4 bg-gradient-to-r from-brand-teal-ultralight to-white rounded-md shadow-sm border border-brand-teal-light hover:shadow-md transition duration-150 ease-in-out';
+                btn.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="font-semibold text-brand-teal-dark">📁 ${folder.name}</span>
+                            <p class="text-sm text-gray-600 mt-1">
+                                ${status.categoryCount} quizles • ${status.playableCount} playable items
+                            </p>
+                        </div>
+                        <span class="text-xs font-medium text-brand-teal px-2 py-1 bg-white rounded-full">
+                            Folder Quiz
+                        </span>
+                    </div>
+                `;
+                btn.addEventListener('click', () => {
+                    toggleModal(categorySelectionModal, false);
+                    startFolderQuiz(folder.id);
+                });
+                folderList.appendChild(btn);
+            }
+        });
+
+        // Then add individual categories
+        categories.forEach(cat => {
+            if (!cat || !cat.id || !Array.isArray(cat.questions)) return;
+            
+            if (cat.questions.length >= MIN_QUESTIONS_TO_PLAY) {
+                const playableQuestions = cat.questions.filter(q => {
+                    const isMastered = q.correctCount >= CORRECT_ANSWER_GOAL;
+                    const cooldownExpired = isMastered && q.masteredTimestamp !== null && 
+                        (now - q.masteredTimestamp) > MASTERED_COOLDOWN_MS;
+                    return !isMastered || cooldownExpired;
+                });
+
+                if (playableQuestions.length > 0) {
+                    playableFound = true;
+                    const btn = document.createElement('button');
+                    btn.className = 'btn block w-full text-left p-3 bg-white rounded-md shadow-sm border border-gray-200 hover:bg-gray-50 transition duration-150 ease-in-out';
+                    btn.dataset.categoryId = cat.id;
+                    btn.innerHTML = `
+                        <span class="font-semibold text-gray-800">${cat.name}</span>
+                        <span class="text-sm text-gray-500 ml-2">(${playableQuestions.length} playable)</span>
+                    `;
+                    btn.addEventListener('click', () => {
+                        toggleModal(categorySelectionModal, false);
+                        startQuiz(cat.id);
+                    });
+                    categoryList.appendChild(btn);
+                }
+            }
+        });
+
+        // Show/hide appropriate content
+        if (!playableFound) {
+            hideElement(quizContent);
+            showElement(noPlayableMsg);
+        } else {
+            showElement(quizContent);
+            hideElement(noPlayableMsg);
+            
+            // Show/hide sections based on whether they exist at all
+            if (!hasFolders) {
+                foldersSection.style.display = 'none';
+            } else {
+                foldersSection.style.display = 'block';
+            }
+            
+            if (!hasCategories) {
+                categoriesSection.style.display = 'none';
+            } else {
+                categoriesSection.style.display = 'block';
+            }
+        }
+        
+        toggleModal(categorySelectionModal, true);
+    }
+    function startQuiz(categoryId) {
+        if (!quizGameplayView || !quizCategoryTitle) {
+            console.error("Quiz gameplay view or title element missing!");
+                showToast('Error', 'Quiz interface is not properly initialized.', 'error');
+                showView('landing');
+            return;
+        }
+
+            currentCategoryId = categoryId;
+        const category = categories.find(cat => cat.id === categoryId);
+
+        if (!category || !Array.isArray(category.questions) || category.questions.length < MIN_QUESTIONS_TO_PLAY) {
+            console.error("Cannot start quiz. Category invalid or insufficient questions:", { categoryId, category });
+                showToast('Cannot Start Quiz', `This quiz needs at least ${MIN_QUESTIONS_TO_PLAY} questions to play.`, 'error');
+            showCategorySelectionModal();
+            return;
+        }
+
+            // Check again if there are *currently* playable items (not just total items)
+        const now = Date.now();
+        const playableNow = category.questions.filter(q => {
+            const isMastered = q.correctCount >= CORRECT_ANSWER_GOAL;
+            const cooldownExpired = isMastered && q.masteredTimestamp !== null && (now - q.masteredTimestamp) > MASTERED_COOLDOWN_MS;
+            return !isMastered || cooldownExpired;
+        });
+
+        if (playableNow.length === 0) {
+            quizCategoryTitle.textContent = `Category: ${category.name}`;
+                showView('quiz');
+            hideElement(questionDisplay);
+            hideElement(answerButtonsDiv);
+            hideElement(feedbackArea);
+            hideElement(correctAnswerReveal);
+            hideElement(nextQuestionBtn);
+            hideElement(gameEndView);
+                showElement(quizUnavailableView); // Show the specific "unavailable" view
+                // Set score/progress displays to reflect no active game
+                scoreIndicator.textContent = 'Score: -';
+                progressIndicator.textContent = 'Progress: -/-';
+                timerDisplay.textContent = '';
+                quizState.quizActive = false; // Ensure quiz is marked inactive
+            return;
+        }
+
+        // Initialize quiz state
+            currentQuizQuestions = category.questions; // Use all questions for potential repeats and progress tracking
+        quizState.originalCategoryQuestionCount = currentQuizQuestions.length;
+            quizState.currentQuestionIndex = -1;
+        quizState.score = 0;
+            quizState.recentCorrect = [];
+            quizState.incorrectQueue = [];
+        quizState.timerInterval = null;
+        quizState.timerValue = TIMER_DURATION;
+            quizState.quizActive = true;
+
+        // Setup UI for quiz start
+        quizCategoryTitle.textContent = `Category: ${category.name}`;
+            updateScore(); // Reset score display
+            updateProgress(); // Update initial progress display
+        hideElement(gameEndView);
+        hideElement(quizUnavailableView);
+        showElement(questionDisplay); // Ensure main game elements are visible
+        showElement(answerButtonsDiv);
+            showElement(feedbackArea); // Might be empty, but show the space
+            showElement(correctAnswerReveal); // Might be empty, but show the space
+            showView('quiz');
+
+        selectAndDisplayQuestion(); // Select the first question
+    }
+    function isQuestionEligible(question, now) {
+             if (!question) return false;
+
+        const isMastered = question.correctCount >= CORRECT_ANSWER_GOAL;
+        const cooldownExpired = isMastered && question.masteredTimestamp !== null && (now - question.masteredTimestamp) > MASTERED_COOLDOWN_MS;
+        const isRecentlyCorrect = quizState.recentCorrect.includes(question.id);
+
+            // Eligible if: NOT recently correct AND (EITHER not mastered OR (mastered AND cooldown is over))
+            return !isRecentlyCorrect && (!isMastered || cooldownExpired);
+    }
+    function selectNextQuestion() {
+        const now = Date.now();
+            const allCategoryQuestions = currentQuizQuestions; // Reference all questions for finding by ID
+
+        // --- Update Skip Counts for Incorrect Queue ---
+        quizState.incorrectQueue = quizState.incorrectQueue.map(item => ({
+                ...item,
+                skipCount: Math.max(0, item.skipCount - 1) // Decrement, floor at 0
+            })).filter(item => item.skipCount >= 0); // Keep items ready or still waiting (filter < 0 just in case)
+
+
+            // --- Prioritize Incorrect Questions Ready for Repeat (skipCount === 0) ---
+            const readyIncorrectItems = quizState.incorrectQueue.filter(item => item.skipCount === 0);
+            let questionToAsk = null;
+
+            if (readyIncorrectItems.length > 0) {
+                 // Find the first ready incorrect item whose actual question is ELIGIBLE right now
+                 const foundReadyIndex = readyIncorrectItems.findIndex(item => {
+                     const question = allCategoryQuestions.find(q => q.id === item.id);
+                     return isQuestionEligible(question, now); // Must also pass standard eligibility (not recently correct etc.)
+                 });
+
+                 if (foundReadyIndex !== -1) {
+                     const selectedItemId = readyIncorrectItems[foundReadyIndex].id;
+                     questionToAsk = allCategoryQuestions.find(q => q.id === selectedItemId);
+                     // Remove from incorrect queue *only* if found and selected
+                     quizState.incorrectQueue = quizState.incorrectQueue.filter(item => item.id !== selectedItemId);
+                     // console.log("Selected from incorrect queue:", selectedItemId);
+                 }
+            }
+
+            // --- If no ready incorrect question found, find any other eligible question ---
+            if (!questionToAsk) {
+                const eligibleQuestions = allCategoryQuestions.filter(q => {
+                    // Check standard eligibility AND ensure it's not waiting in the incorrect queue
+                    const isWaitingIncorrect = quizState.incorrectQueue.some(item => item.id === q.id && item.skipCount > 0);
+                    return isQuestionEligible(q, now) && !isWaitingIncorrect;
+                });
+
+        if (eligibleQuestions.length > 0) {
+            const randomIndex = Math.floor(Math.random() * eligibleQuestions.length);
+                    questionToAsk = eligibleQuestions[randomIndex];
+                    // console.log("Selected eligible (non-mastered/cooled-down/not waiting):", questionToAsk.id);
+                }
+            }
+
+            // --- Return index or -1 ---
+            if (questionToAsk) {
+                return allCategoryQuestions.findIndex(q => q.id === questionToAsk.id);
+            } else {
+                // console.log("No eligible questions available to select at this moment.");
+        return -1; // Indicate no question could be selected
+    }
+        }
+        function displayQuestion(qIndex) {
+            if (!quizState.quizActive) return;
+
+            // Handle cases where no valid question index is found
+            if (qIndex === -1) {
+                // console.log("No eligible question index found. Checking game end/unavailable conditions.");
+            const now = Date.now();
+                // Check if ALL questions are mastered (regardless of cooldown for this check)
+                const allMastered = currentQuizQuestions.every(q => q.correctCount >= CORRECT_ANSWER_GOAL);
+
+                 if (allMastered && currentQuizQuestions.length > 0) {
+                     handleGameEnd(true); // All items achieved mastery goal
+            } else {
+                     // If not all mastered, but none are currently SELECTABLE, show unavailable message
+                     showQuizUnavailableMessage();
+            }
+            return;
+        }
+
+        // --- Setup UI for the new question ---
+        showElement(questionDisplay);
+        showElement(answerButtonsDiv);
+            hideElement(feedbackArea); // Hide until feedback is given
+            hideElement(correctAnswerReveal); // Hide until needed
+        hideElement(nextQuestionBtn);
+        hideElement(quizUnavailableView);
+            hideElement(gameEndView);
+            // Clear previous feedback text and styles
+            feedbackArea.textContent = '';
+            feedbackArea.className = 'min-h-[30px] text-center font-semibold mb-4';
+            correctAnswerReveal.textContent = '';
+
+        quizState.currentQuestionIndex = qIndex;
+        const question = currentQuizQuestions[qIndex];
+        if (!question) {
+            console.error("Invalid question object at index:", qIndex);
+            selectAndDisplayQuestion(); // Try selecting another one
+            return;
+        }
+
+        questionDisplay.textContent = question.text;
+            answerButtonsDiv.innerHTML = '';
+
+        // --- Prepare Answer Options ---
+        const correctAnswers = question.answers;
+        const chosenCorrectAnswer = correctAnswers[Math.floor(Math.random() * correctAnswers.length)];
+
+            // Gather potential incorrect options from other questions in the *same category*
+        let incorrectOptions = [];
+        currentQuizQuestions.forEach((otherQ) => {
+            if (otherQ.id !== question.id && Array.isArray(otherQ.answers)) {
+                otherQ.answers.forEach(ans => {
+                        // Add if it's not one of the correct answers for the *current* question AND not empty
+                        if (ans.trim() !== '' && !correctAnswers.includes(ans)) {
+                        incorrectOptions.push(ans);
+                    }
+                });
+            }
+        });
+
+            // Deduplicate and shuffle incorrect options
+        incorrectOptions = [...new Set(incorrectOptions)];
+        for (let i = incorrectOptions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [incorrectOptions[i], incorrectOptions[j]] = [incorrectOptions[j], incorrectOptions[i]];
+        }
+
+            // Select up to (MAX_ANSWERS_PER_QUESTION - 1) unique incorrect options
+            let finalIncorrectAnswers = incorrectOptions.slice(0, MAX_ANSWERS_PER_QUESTION - 1);
+
+            // Combine correct and incorrect, then shuffle
+        let answerOptions = [chosenCorrectAnswer, ...finalIncorrectAnswers];
+            // Ensure we don't exceed max options if few incorrect were found
+            answerOptions = answerOptions.slice(0, MAX_ANSWERS_PER_QUESTION);
+
+        for (let i = answerOptions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [answerOptions[i], answerOptions[j]] = [answerOptions[j], answerOptions[i]];
+        }
+
+        // Create and append answer buttons
+        answerOptions.forEach(option => {
+            const button = document.createElement('button');
+            button.textContent = option;
+                // Use btn-subtle for base, makes highlighting clearer
+                // <<< ADDED btn class for consistent styling/click sound >>>
+                button.className = 'answer-btn btn btn-subtle w-full text-gray-800 py-3 px-4 border border-gray-300 min-h-[50px] text-left';
+            button.addEventListener('click', () => handleAnswerSelection(option, question.id));
+            answerButtonsDiv.appendChild(button);
+        });
+
+        startTimer(question.id);
+    }
+
+        // <<< MODIFIED handleAnswerSelection to play sounds >>>
+    function handleAnswerSelection(selectedOption, questionId) {
+            if (!quizState.quizActive) return;
+
+            stopTimer();
+
+        const question = currentQuizQuestions[quizState.currentQuestionIndex];
+        if (!question || question.id !== questionId) {
+                console.error("Question mismatch during answer selection!");
+                selectAndDisplayQuestion();
+            return;
+        }
+
+        const isTimeout = selectedOption === "TIMEOUT_RAN_OUT";
+        const isCorrect = !isTimeout && question.answers.includes(selectedOption);
+            let wasMasteredBefore = question.correctCount >= CORRECT_ANSWER_GOAL; // Check before updating
+
+            // Disable buttons and apply styling
+        answerButtonsDiv.querySelectorAll('.answer-btn').forEach(btn => {
+            btn.disabled = true;
+                const isThisCorrect = question.answers.includes(btn.textContent);
+                const isThisSelected = !isTimeout && btn.textContent === selectedOption;
+
+                if (isThisSelected) {
+                    btn.classList.add('selected-answer'); // Always mark selected
+                    if (isCorrect) {
+                    btn.classList.add('correct-answer');
+                    } else {
+                btn.classList.add('incorrect-answer');
+            }
+                } else if (isThisCorrect) {
+                     if(!isCorrect) {
+                         btn.classList.add('correct-answer');
+                         btn.classList.remove('opacity-60');
+                     } else {
+                 btn.classList.add('opacity-60');
+                     }
+                } else {
+                    btn.classList.add('opacity-60'); // Fade incorrect, unselected
+             }
+        });
+
+
+        if (isCorrect) {
+                playSound(audioCorrect); // <<< PLAY Correct Sound >>>
+            question.correctCount++;
+                quizState.score += 10;
+
+                const isMasteredNow = question.correctCount >= CORRECT_ANSWER_GOAL;
+
+                if (isMasteredNow) {
+                if (!question.masteredTimestamp) {
+                    question.masteredTimestamp = Date.now();
+                }
+                    feedbackArea.textContent = wasMasteredBefore ? "Correct!" : "Correct! ✨ Item Mastered!";
+                feedbackArea.className = 'feedback-pop min-h-[30px] text-center font-semibold mb-4 text-green-600';
+            } else {
+                feedbackArea.textContent = `Correct! Progress: ${question.correctCount}/${CORRECT_ANSWER_GOAL}`;
+                feedbackArea.className = 'feedback-pop min-h-[30px] text-center font-semibold mb-4 text-green-600';
+            }
+
+            quizState.recentCorrect.push(questionId);
+                while (quizState.recentCorrect.length > CORRECT_QUESTION_SKIP_COUNT) {
+                    quizState.recentCorrect.shift();
+            }
+                 quizState.incorrectQueue = quizState.incorrectQueue.filter(item => item.id !== questionId);
+
+        } else { // Incorrect or Timeout
+                 playSound(audioWrong); // <<< PLAY Wrong Sound >>>
+                 quizState.score = Math.max(0, quizState.score - 5);
+
+                if (!wasMasteredBefore && question.correctCount > 0) {
+                 feedbackArea.textContent = isTimeout ? "Time's up! Progress reset." : "Incorrect! Progress reset.";
+                     question.correctCount = 0;
+            } else {
+                     feedbackArea.textContent = isTimeout ? "Time's up!" : "Incorrect!";
+            }
+            feedbackArea.className = 'feedback-pop min-h-[30px] text-center font-semibold mb-4 text-red-600';
+
+                correctAnswerReveal.textContent = `Correct answer${question.answers.length > 1 ? 's' : ''}: ${question.answers.join(' / ')}`;
+                 showElement(correctAnswerReveal);
+
+                if (!wasMasteredBefore) {
+                const existingIndex = quizState.incorrectQueue.findIndex(item => item.id === questionId);
+                if (existingIndex === -1) {
+                    quizState.incorrectQueue.push({ id: questionId, skipCount: INCORRECT_QUESTION_SKIP_COUNT });
+                } else {
+                        quizState.incorrectQueue[existingIndex].skipCount = INCORRECT_QUESTION_SKIP_COUNT;
+                }
+            }
+        }
+
+            saveData();
+        updateScore();
+            updateProgress();
+        showElement(feedbackArea);
+            showElement(nextQuestionBtn);
+
+            // Check for Game End Condition AFTER processing answer
+        const allInCategoryMasteredNow = currentQuizQuestions.every(q => q.correctCount >= CORRECT_ANSWER_GOAL);
+        if (allInCategoryMasteredNow) {
+                 // Delay slightly to allow user to see feedback/hear sound before ending
+                setTimeout(() => handleGameEnd(true), 600); // Increased delay slightly for sound
+        }
+    }
+
+        // ... (keep selectAndDisplayQuestion, startTimer, stopTimer, updateProgress, updateScore, showQuizUnavailableMessage) ...
+    function selectAndDisplayQuestion() {
+            if (!quizState.quizActive) return;
+            stopTimer();
+            const nextIndex = selectNextQuestion();
+            // Delay slightly to allow UI updates from previous answer to settle
+            setTimeout(() => displayQuestion(nextIndex), 100); // Short delay
+        }
+    function startTimer(questionId) {
+            if (!quizState.quizActive) return;
+            stopTimer();
+
+            quizState.timerValue = TIMER_DURATION;
+        timerDisplay.textContent = `Time: ${quizState.timerValue}s`;
+            timerDisplay.classList.remove('text-red-500', 'font-bold');
+
+            const timerQuestionId = questionId; // Capture the ID for this timer instance
+
+        quizState.timerInterval = setInterval(() => {
+             if (!quizState.quizActive || !currentQuizQuestions[quizState.currentQuestionIndex] || currentQuizQuestions[quizState.currentQuestionIndex].id !== timerQuestionId) {
+                     stopTimer();
+                 return;
+             }
+
+            quizState.timerValue--;
+            timerDisplay.textContent = `Time: ${quizState.timerValue}s`;
+
+            if (quizState.timerValue <= 5 && quizState.timerValue > 0) {
+                timerDisplay.classList.add('text-red-500', 'font-bold');
+            }
+
+            if (quizState.timerValue <= 0) {
+                     // Pass the correct ID for the timeout action
+                 handleAnswerSelection("TIMEOUT_RAN_OUT", timerQuestionId);
+            }
+            }, 1000);
+    }
+    function stopTimer() {
+        if (quizState.timerInterval) {
+            clearInterval(quizState.timerInterval);
+            quizState.timerInterval = null;
+            timerDisplay.classList.remove('text-red-500', 'font-bold');
+                // Don't clear text immediately, let handleAnswerSelection/GameEnd manage it
+        }
+    }
+    function updateProgress() {
+        if (!quizState.quizActive || !currentCategoryId) {
+                progressIndicator.textContent = `Progress: -/-`;
+            return;
+        }
+            // Get the *current* state of the category being played
+        const category = categories.find(cat => cat.id === currentCategoryId);
+        if (!category || !Array.isArray(category.questions)) {
+                 progressIndicator.textContent = `Progress: ?/?`;
+             return;
+        }
+
+        const totalInCategory = category.questions.length;
+            // Recalculate mastered count directly from the category data *in memory*
+        const masteredInCategory = category.questions.filter(q => q.correctCount >= CORRECT_ANSWER_GOAL).length;
+        progressIndicator.textContent = `${masteredInCategory}/${totalInCategory} Items Mastered`;
+    }
+    function updateScore() {
+        if (!quizState.quizActive) {
+                scoreIndicator.textContent = 'Score: -';
+            return;
+        }
+        scoreIndicator.textContent = `Score: ${quizState.score}`;
+    }
+    function showQuizUnavailableMessage() {
+            stopTimer();
+            quizState.quizActive = false;
+
+        hideElement(questionDisplay);
+        hideElement(answerButtonsDiv);
+        hideElement(feedbackArea);
+        hideElement(correctAnswerReveal);
+        hideElement(nextQuestionBtn);
+        hideElement(gameEndView);
+            showElement(quizUnavailableView); // Show the specific "unavailable" message
+
+            // Reflect inactive state in UI elements
+        updateProgress();
+        updateScore();
+            timerDisplay.textContent = ''; // Clear timer display
+    }
+
+
+        // <<< MODIFIED handleGameEnd to play congrats sound >>>
+    function handleGameEnd(allMastered) {
+            quizState.quizActive = false;
+        stopTimer();
+            timerDisplay.textContent = '';
+
+        hideElement(questionDisplay);
+        hideElement(answerButtonsDiv);
+        hideElement(feedbackArea);
+        hideElement(correctAnswerReveal);
+        hideElement(nextQuestionBtn);
+        hideElement(quizUnavailableView);
+            hideElement(masteryBonusMessage);
+
+            let masteryPoints = 0;
+
+            // Calculate points for mastered items
+            if (currentQuizQuestions) {
+                currentQuizQuestions.forEach(q => {
+                    if (q.correctCount >= CORRECT_ANSWER_GOAL) {
+                        masteryPoints += 2; // 2 points per mastered item
+                    }
+                });
+                // Add points to total
+                totalUserPoints += masteryPoints;
+                saveData(); // Save after updating points
+            }
+
+        if (allMastered) {
+                playSound(audioCongrats);
+            gameEndMessage.textContent = `Congratulations! You've mastered all ${quizState.originalCategoryQuestionCount} items in this quizle!!`;
+            gameEndMessage.classList.remove('text-gray-700');
+                gameEndMessage.classList.add('text-green-700', 'font-semibold');
+
+                if (masteryPoints > 0) {
+                    masteryBonusMessage.textContent = `+${masteryPoints} points are added to your balance! 🏆`;
+                    showElement(masteryBonusMessage);
+                }
+        } else {
+            gameEndMessage.textContent = "Quiz session finished.";
+             gameEndMessage.classList.add('text-gray-700');
+             gameEndMessage.classList.remove('text-green-700', 'font-semibold');
+
+                if (masteryPoints > 0) {
+                    masteryBonusMessage.textContent = `+${masteryPoints} points are added to your balance!`;
+                    showElement(masteryBonusMessage);
+                }
+            }
+
+            finalScoreDisplay.textContent = `You've earned ${masteryPoints} points!`;
+            showElement(gameEndView);
+            
+            // Update the total score display
+            updateTotalScoreDisplay();
+        }
+
+        // ... (keep handleExitQuiz) ...
+    function handleExitQuiz() {
+            if (quizState.quizActive && confirm("Stop the current quiz session and return to the category list? Progress for this session won't be saved fully (mastery counts are saved).")) {
+                quizState.quizActive = false;
+            stopTimer();
+                handleGameEnd(false);
+                hideElement(gameEndView);
+                showView('admin');
+                showToast('Quiz Ended', 'Quiz session stopped. Mastery progress has been saved.', 'info');
+            } else if (!quizState.quizActive) {
+                showView('admin');
+        }
+    }
+
+    // --- Event Listeners Setup ---
+        // <<< MODIFIED to handle first interaction and clicks >>>
+    function setupEventListeners() {
+            // Listener for first interaction (any click/keypress)
+            document.body.addEventListener('click', handleFirstInteraction, { once: true });
+            document.body.addEventListener('keydown', handleFirstInteraction, { once: true });
+
+            // General click sound listener for buttons
+            appContainer.addEventListener('click', (event) => {
+                // Check if the clicked element or its parent is a button or link with 'btn' class
+                const targetButton = event.target.closest('button.btn, a.btn, button[data-action]'); // Include data-action buttons
+                if (targetButton && !targetButton.disabled) {
+                     // Avoid playing click for answer buttons here (handled in handleAnswerSelection)
+                    if (!targetButton.classList.contains('answer-btn')) {
+                        playSound(audioClick);
+                    }
+                }
+            });
+
+            // Specific button listeners (keep existing ones)
+        startQuizBtn.addEventListener('click', showCategorySelectionModal);
+        goToAdminBtn.addEventListener('click', () => showView('admin'));
+        backToLandingFromAdmin.addEventListener('click', () => showView('landing'));
+        showAddCategoryModalBtn.addEventListener('click', () => {
+                hideElement(categoryNameError);
+                categoryNameInput.value = '';
+            toggleModal(addCategoryModal, true);
+                categoryNameInput.focus();
+        });
+            importCategoryInput.addEventListener('change', importCategory);
+        saveCategoryBtn.addEventListener('click', handleAddCategory);
+        cancelAddCategoryBtn.addEventListener('click', () => toggleModal(addCategoryModal, false));
+        cancelSelectCategoryBtn.addEventListener('click', () => toggleModal(categorySelectionModal, false));
+        backToAdminFromDetail.addEventListener('click', () => {
+                currentCategoryId = null;
+            showView('admin');
+        });
+            addAnswerFieldBtn.addEventListener('click', () => addAnswerField());
+            saveQuestionBtn.addEventListener('click', handleSaveQuestion);
+        playThisCategoryBtn.addEventListener('click', () => {
+            if (!playThisCategoryBtn.disabled && currentCategoryId) {
+                startQuiz(currentCategoryId);
+            }
+        });
+        exitQuizBtn.addEventListener('click', handleExitQuiz);
+        nextQuestionBtn.addEventListener('click', selectAndDisplayQuestion);
+        playAgainBtn.addEventListener('click', () => {
+             if (currentCategoryId) {
+                 startQuiz(currentCategoryId);
+             } else {
+                 console.error("Cannot play again, currentCategoryId is null.");
+                     showView('admin');
+             }
+        });
+            backToCategoriesFromEndBtn.addEventListener('click', () => showView('admin'));
+        backToCategoriesFromUnavailableBtn.addEventListener('click', () => showView('admin'));
+
+            // Note: Individual button click sounds (like remove answer, delete category, etc.)
+            // are now handled by the general appContainer listener. If you needed *different*
+            // sounds for those, you'd add specific playSound calls back into their handlers.
+    }
+
+    // --- App Initialization ---
+        // <<< MODIFIED to try starting BG music early >>>
+    function initApp() {
+            loadData();
+
+            // Add default test category if no categories exist
+        if (categories.length === 0) {
+            const testCategory = {
+                id: Date.now(),
+                    name: "Sample Quizle",
+                    folderId: null, // Start in root level
+                questions: [
+                        { id: 101, text: "What is 1+1?", answers: ["2"], correctCount: 0, masteredTimestamp: null },
+                        { id: 102, text: "What is the capital of France?", answers: ["Paris"], correctCount: 0, masteredTimestamp: null },
+                        { id: 103, text: "What color is the sky?", answers: ["Blue"], correctCount: 0, masteredTimestamp: null },
+                        { id: 104, text: "What sound does a cat make?", answers: ["Meow", "Purr"], correctCount: 0, masteredTimestamp: null },
+                        { id: 105, text: "What is 2x3?", answers: ["6"], correctCount: 0, masteredTimestamp: null },
+                ]
+            };
+            categories.push(testCategory);
+                saveData();
+            }
+
+            setupEventListeners();
+            displayCategoryList();
+            showView('landing');
+            startBackgroundMusic();
+    }
+
+    // Start the application execution
+    initApp();
+
+        // Add folder management functions
+        function createFolder(name) {
+            const newFolder = {
+                id: Date.now(),
+                name: name,
+                categoryIds: []
+            };
+            folders.push(newFolder);
+            saveData();
+            displayCategoryList();
+            showToast('Success', `Folder "${name}" created successfully!`, 'success');
+        }
+
+        function deleteFolder(folderId) {
+            const folder = folders.find(f => f.id === folderId);
+            if (!folder) return;
+
+            if (confirm(`Are you sure you want to delete the folder "${folder.name}"?\nAll quizles inside will be moved to the main list.`)) {
+                // Move all categories in this folder to root level
+                categories.forEach(cat => {
+                    if (cat.folderId === folderId) {
+                        cat.folderId = null;
+                    }
+                });
+
+                // Remove the folder
+                folders = folders.filter(f => f.id !== folderId);
+                saveData();
+                displayCategoryList();
+                showToast('Success', `Folder "${folder.name}" deleted. All quizles moved to main list.`, 'success');
+            }
+        }
+
+        function renameFolder(folderId, newName) {
+            const folder = folders.find(f => f.id === folderId);
+            if (!folder) return;
+            
+            folder.name = newName;
+            saveData();
+            displayCategoryList();
+            showToast('Success', 'Folder renamed successfully!', 'success');
+        }
+
+        function moveCategory(categoryId, targetFolderId) {
+            const category = categories.find(c => c.id === categoryId);
+            if (!category) return;
+
+            // If moving to a folder, verify the folder exists (unless moving to root)
+            if (targetFolderId !== null && !folders.find(f => f.id === targetFolderId)) {
+                showToast('Error', 'Cannot move quizle: target folder not found.', 'error');
+                return;
+            }
+
+            category.folderId = targetFolderId;
+            saveData();
+            displayCategoryList();
+            
+            const location = targetFolderId === null ? 'main list' : `folder "${folders.find(f => f.id === targetFolderId).name}"`;
+            showToast('Success', `Quizle "${category.name}" moved to ${location}.`, 'success');
+        }
+
+        function renameCategory(categoryId, newName) {
+            const category = categories.find(c => c.id === categoryId);
+            if (!category) return;
+            
+            category.name = newName;
+            saveData();
+            displayCategoryList();
+            showToast('Success', 'Quizle renamed successfully!', 'success');
+        }
+
+        // Update the display function
+        function displayCategoryList() {
+            const container = document.getElementById('category-list');
+            container.innerHTML = '';
+            
+            if (categories.length === 0 && folders.length === 0) {
+                showElement(document.getElementById('category-list-empty'));
+                return;
+            }
+            
+            hideElement(document.getElementById('category-list-empty'));
+
+            // Display folders first
+            folders.forEach(folder => {
+                const folderDiv = document.createElement('div');
+                folderDiv.className = 'folder-header';
+                
+                const folderCategories = categories.filter(cat => cat.folderId === folder.id);
+                
+                folderDiv.innerHTML = `
+                    <div class="folder-title group" data-folder-id="${folder.id}">
+                        <div class="flex items-center flex-1">
+                            <span class="folder-icon mr-2">▶</span>
+                            <span class="folder-name">${folder.name}</span>
+                        </div>
+                        <div class="folder-actions hidden group-hover:flex items-center space-x-2">
+                            <button class="rename-folder-btn text-xs text-blue-600 hover:text-blue-800 font-medium">Rename</button>
+                            <button class="delete-folder-btn text-xs text-red-600 hover:text-red-800 font-medium">Delete</button>
+                        </div>
+                    </div>
+                    <div class="folder-content">
+                        <div class="space-y-2 category-container">
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(folderDiv);
+                
+                // Add folder event listeners
+                const titleDiv = folderDiv.querySelector('.folder-title');
+                const contentDiv = folderDiv.querySelector('.folder-content');
+                const folderIcon = folderDiv.querySelector('.folder-icon');
+                const categoryContainer = contentDiv.querySelector('.category-container');
+                
+                // Toggle folder open/close
+                titleDiv.addEventListener('click', (e) => {
+                    if (!e.target.closest('button')) {
+                        contentDiv.classList.toggle('open');
+                        folderIcon.classList.toggle('open');
+                    }
+                });
+                
+                // Add categories to the folder
+                folderCategories.forEach(cat => {
+                    const categoryElement = createCategoryElement(cat);
+                    categoryContainer.appendChild(categoryElement);
+                });
+                
+                // Folder rename handler
+                const renameBtn = folderDiv.querySelector('.rename-folder-btn');
+                renameBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const newName = prompt('Enter new folder name:', folder.name);
+                    if (newName && newName.trim()) {
+                        renameFolder(folder.id, newName.trim());
+                    }
+                });
+                
+                // Folder delete handler
+                const deleteBtn = folderDiv.querySelector('.delete-folder-btn');
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteFolder(folder.id);
+                });
+            });
+
+            // Display uncategorized categories
+            const uncategorizedCategories = categories.filter(cat => !cat.folderId);
+            uncategorizedCategories.forEach(cat => {
+                container.appendChild(createCategoryElement(cat));
+            });
+
+            // Add drag and drop functionality
+            setupDragAndDrop();
+        }
+
+        function createCategoryHTML(category) {
+            return `
+                <div class="category-item group bg-white p-3 rounded-md shadow-sm border border-gray-200 hover:bg-gray-50 cursor-pointer"
+                     data-category-id="${category.id}" draggable="true">
+                    <div class="flex justify-between items-center">
+                        <span class="font-semibold text-gray-800 flex-1 mr-3 truncate category-name" title="${category.name}">${category.name}</span>
+                        <span class="text-sm font-medium text-white bg-blue-500 rounded-full px-2.5 py-0.5 mr-3">${category.questions.length}</span>
+                        <div class="category-actions space-x-2">
+                            <button class="rename-category-btn text-xs text-blue-600 hover:text-blue-800">Rename</button>
+                            <button class="export-category-btn text-xs text-green-600 hover:text-green-800">Export</button>
+                            <button class="delete-category-btn text-xs text-red-600 hover:text-red-800">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createCategoryElement(category) {
+            const div = document.createElement('div');
+            div.innerHTML = createCategoryHTML(category);
+            const categoryElement = div.firstElementChild;
+            
+            attachCategoryEventListeners(categoryElement, category);
+            return categoryElement;
+        }
+
+        function attachCategoryEventListeners(element, category) {
+            // Click handler for showing category detail
+            element.addEventListener('click', (e) => {
+                if (!e.target.closest('button')) {
+                    showCategoryDetail(category.id);
+                }
+            });
+            
+            // Rename button handler
+            element.querySelector('.rename-category-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                const newName = prompt('Enter new category name:', category.name);
+                if (newName && newName.trim()) {
+                    renameCategory(category.id, newName.trim());
+                }
+            });
+            
+            // Export button handler
+            element.querySelector('.export-category-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                exportCategory(category.id);
+            });
+            
+            // Delete button handler
+            element.querySelector('.delete-category-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteCategory(category.id);
+            });
+        }
+
+        function setupDragAndDrop() {
+            const draggables = document.querySelectorAll('.category-item');
+            const dropZones = document.querySelectorAll('.folder-content');
+            const categoryList = document.getElementById('category-list');
+
+            // Helper function to add drag styling
+            const addDragStyling = (element) => {
+                element.classList.add('bg-brand-teal-ultralight', 'border-2', 'border-brand-teal', 'border-dashed');
+            };
+
+            // Helper function to remove drag styling
+            const removeDragStyling = (element) => {
+                element.classList.remove('bg-brand-teal-ultralight', 'border-2', 'border-brand-teal', 'border-dashed');
+            };
+
+            draggables.forEach(draggable => {
+                draggable.setAttribute('draggable', 'true');
+                
+                draggable.addEventListener('dragstart', (e) => {
+                    e.stopPropagation();
+                    draggable.classList.add('opacity-50');
+                    e.dataTransfer.setData('text/plain', draggable.dataset.categoryId);
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+                
+                draggable.addEventListener('dragend', () => {
+                    draggable.classList.remove('opacity-50');
+                    // Remove styling from all potential drop zones
+                    dropZones.forEach(zone => removeDragStyling(zone));
+                    removeDragStyling(categoryList);
+                });
+            });
+            
+            // Make the root category list a drop zone
+            categoryList.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const draggingElement = document.querySelector('.category-item.opacity-50');
+                if (!draggingElement) return;
+                
+                // Only show drop styling if not over a folder's content
+                if (!e.target.closest('.folder-content')) {
+                    addDragStyling(categoryList);
+                }
+            });
+            
+            categoryList.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!e.target.closest('.folder-content')) {
+                    removeDragStyling(categoryList);
+                }
+            });
+            
+            categoryList.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Don't process drop if it's inside a folder
+                if (e.target.closest('.folder-content')) return;
+                
+                removeDragStyling(categoryList);
+                const categoryId = Number(e.dataTransfer.getData('text/plain'));
+                if (!isNaN(categoryId)) {
+                    moveCategory(categoryId, null); // Move to root level
+                }
+            });
+            
+            // Handle drops in folders
+            dropZones.forEach(zone => {
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    addDragStyling(zone);
+                });
+                
+                zone.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    removeDragStyling(zone);
+                });
+                
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    removeDragStyling(zone);
+                    
+                    const categoryId = Number(e.dataTransfer.getData('text/plain'));
+                    if (isNaN(categoryId)) return;
+                    
+                    const folderHeader = zone.closest('.folder-header');
+                    if (!folderHeader) return;
+                    
+                    const folderId = Number(folderHeader.querySelector('.folder-title').dataset.folderId);
+                    if (!isNaN(folderId)) {
+                        moveCategory(categoryId, folderId);
+                        
+                        // Ensure the folder is open after dropping
+                        const folderContent = folderHeader.querySelector('.folder-content');
+                        const folderIcon = folderHeader.querySelector('.folder-icon');
+                        if (folderContent && !folderContent.classList.contains('open')) {
+                            folderContent.classList.add('open');
+                            folderIcon?.classList.add('open');
+                        }
+                    }
+                });
+            });
+        }
+
+        // Add event listeners for folder functionality
+        document.getElementById('create-folder-btn').addEventListener('click', () => {
+            const folderModal = document.getElementById('folder-modal');
+            const folderNameInput = document.getElementById('folder-name-input');
+            folderNameInput.value = '';
+            toggleModal(folderModal, true);
+            folderNameInput.focus();
+        });
+
+        document.getElementById('save-folder-btn').addEventListener('click', () => {
+            const folderNameInput = document.getElementById('folder-name-input');
+            const name = folderNameInput.value.trim();
+            
+            if (!name) {
+                showElement(document.getElementById('folder-name-error'));
+                return;
+            }
+            
+            createFolder(name);
+            toggleModal(document.getElementById('folder-modal'), false);
+        });
+
+        document.getElementById('cancel-folder-btn').addEventListener('click', () => {
+            toggleModal(document.getElementById('folder-modal'), false);
+        });
+
+        // Add these new functions for folder quiz functionality
+        function getFolderPlayableStatus(folderId) {
+            const folderCategories = categories.filter(cat => cat.folderId === folderId);
+            const now = Date.now();
+            
+            // Check if folder has any categories with playable questions
+            let totalPlayableQuestions = 0;
+            folderCategories.forEach(cat => {
+                const playableQuestions = cat.questions.filter(q => {
+                    const isMastered = q.correctCount >= CORRECT_ANSWER_GOAL;
+                    const cooldownExpired = isMastered && q.masteredTimestamp !== null && 
+                        (now - q.masteredTimestamp) > MASTERED_COOLDOWN_MS;
+                    return !isMastered || cooldownExpired;
+                });
+                totalPlayableQuestions += playableQuestions.length;
+            });
+
+            return {
+                isPlayable: totalPlayableQuestions >= MIN_QUESTIONS_TO_PLAY,
+                playableCount: totalPlayableQuestions,
+                categoryCount: folderCategories.length,
+                totalQuestions: folderCategories.reduce((sum, cat) => sum + cat.questions.length, 0)
+            };
+        }
+
+        // Update showCategorySelectionModal to include folders
+        function showCategorySelectionModal() {
+            if (!categorySelectionModal) {
+                console.error("Category Selection Modal element not found!");
+                showToast('Error', 'Cannot open category selection.', 'error');
+                return;
+            }
+
+            const folderList = document.getElementById('playable-folder-list');
+            const categoryList = document.getElementById('playable-category-list');
+            const noPlayableMsg = document.getElementById('no-playable-categories-msg');
+            const quizContent = document.getElementById('quiz-selection-content');
+            const foldersSection = document.getElementById('folders-section');
+            const categoriesSection = document.getElementById('categories-section');
+            
+            folderList.innerHTML = '';
+            categoryList.innerHTML = '';
+            
+            const now = Date.now();
+            let playableFound = false;
+            let hasFolders = folders.length > 0;
+            let hasCategories = categories.length > 0;
+
+            // Add folders first
+            folders.forEach(folder => {
+                const status = getFolderPlayableStatus(folder.id);
+                if (status.isPlayable) {
+                    playableFound = true;
+                    const btn = document.createElement('button');
+                    btn.className = 'btn block w-full text-left p-4 bg-gradient-to-r from-brand-teal-ultralight to-white rounded-md shadow-sm border border-brand-teal-light hover:shadow-md transition duration-150 ease-in-out';
+                    btn.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="font-semibold text-brand-teal-dark">📁 ${folder.name}</span>
+                                <p class="text-sm text-gray-600 mt-1">
+                                    ${status.categoryCount} quizles • ${status.playableCount} playable items
+                                </p>
+                            </div>
+                            <span class="text-xs font-medium text-brand-teal px-2 py-1 bg-white rounded-full">
+                                Folder Quiz
+                            </span>
+                        </div>
+                    `;
+                    btn.addEventListener('click', () => {
+                        toggleModal(categorySelectionModal, false);
+                        startFolderQuiz(folder.id);
+                    });
+                    folderList.appendChild(btn);
+                }
+            });
+
+            // Then add individual categories
+            categories.forEach(cat => {
+                if (!cat || !cat.id || !Array.isArray(cat.questions)) return;
+                
+                if (cat.questions.length >= MIN_QUESTIONS_TO_PLAY) {
+                    const playableQuestions = cat.questions.filter(q => {
+                        const isMastered = q.correctCount >= CORRECT_ANSWER_GOAL;
+                        const cooldownExpired = isMastered && q.masteredTimestamp !== null && 
+                            (now - q.masteredTimestamp) > MASTERED_COOLDOWN_MS;
+                        return !isMastered || cooldownExpired;
+                    });
+
+                    if (playableQuestions.length > 0) {
+                        playableFound = true;
+                        const btn = document.createElement('button');
+                        btn.className = 'btn block w-full text-left p-3 bg-white rounded-md shadow-sm border border-gray-200 hover:bg-gray-50 transition duration-150 ease-in-out';
+                        btn.dataset.categoryId = cat.id;
+                        btn.innerHTML = `
+                            <span class="font-semibold text-gray-800">${cat.name}</span>
+                            <span class="text-sm text-gray-500 ml-2">(${playableQuestions.length} playable)</span>
+                        `;
+                        btn.addEventListener('click', () => {
+                            toggleModal(categorySelectionModal, false);
+                            startQuiz(cat.id);
+                        });
+                        categoryList.appendChild(btn);
+                    }
+                }
+            });
+
+            // Show/hide appropriate content
+            if (!playableFound) {
+                hideElement(quizContent);
+                showElement(noPlayableMsg);
+            } else {
+                showElement(quizContent);
+                hideElement(noPlayableMsg);
+                
+                // Show/hide sections based on whether they exist at all
+                if (!hasFolders) {
+                    foldersSection.style.display = 'none';
+                } else {
+                    foldersSection.style.display = 'block';
+                }
+                
+                if (!hasCategories) {
+                    categoriesSection.style.display = 'none';
+                } else {
+                    categoriesSection.style.display = 'block';
+                }
+            }
+            
+            toggleModal(categorySelectionModal, true);
+        }
+
+        // Add function to start a folder quiz
+        function startFolderQuiz(folderId) {
+            const folder = folders.find(f => f.id === folderId);
+            if (!folder) {
+                showToast('Error', 'Could not find the selected folder.', 'error');
+                return;
+            }
+
+            const folderCategories = categories.filter(cat => cat.folderId === folderId);
+            const status = getFolderPlayableStatus(folderId);
+
+            if (!status.isPlayable) {
+                showToast('Error', `Need at least ${MIN_QUESTIONS_TO_PLAY} playable items to start a quiz.`, 'error');
+                return;
+            }
+
+            // Initialize quiz state for folder
+            currentCategoryId = null; // We're not in a single category
+            currentQuizQuestions = [];
+            
+            // Gather all playable questions from all categories in the folder
+            const now = Date.now();
+            folderCategories.forEach(cat => {
+                cat.questions.forEach(q => {
+                    const isMastered = q.correctCount >= CORRECT_ANSWER_GOAL;
+                    const cooldownExpired = isMastered && q.masteredTimestamp !== null && 
+                        (now - q.masteredTimestamp) > MASTERED_COOLDOWN_MS;
+                    
+                    if (!isMastered || cooldownExpired) {
+                        // Add category reference to each question for proper tracking
+                        currentQuizQuestions.push({
+                            ...q,
+                            categoryId: cat.id,
+                            categoryName: cat.name
+                        });
+                    }
+                });
+            });
+
+            quizState.originalCategoryQuestionCount = currentQuizQuestions.length;
+            quizState.currentQuestionIndex = -1;
+            quizState.score = 0;
+            quizState.recentCorrect = [];
+            quizState.incorrectQueue = [];
+            quizState.timerInterval = null;
+            quizState.timerValue = TIMER_DURATION;
+            quizState.quizActive = true;
+
+            // Setup UI for quiz start
+            quizCategoryTitle.textContent = `Folder Quiz: ${folder.name}`;
+            updateScore();
+            updateProgress();
+            hideElement(gameEndView);
+            hideElement(quizUnavailableView);
+            showElement(questionDisplay);
+            showElement(answerButtonsDiv);
+            showElement(feedbackArea);
+            showElement(correctAnswerReveal);
+            showView('quiz');
+
+            selectAndDisplayQuestion();
+        }
+
+        // Update handleAnswerSelection to handle folder quiz questions
+        function handleAnswerSelection(selectedOption, questionId) {
+            if (!quizState.quizActive) return;
+
+            stopTimer();
+
+            const currentQuestion = currentQuizQuestions[quizState.currentQuestionIndex];
+            if (!currentQuestion || currentQuestion.id !== questionId) {
+                console.error("Question mismatch during answer selection!");
+                selectAndDisplayQuestion();
+                return;
+            }
+
+            const isTimeout = selectedOption === "TIMEOUT_RAN_OUT";
+            const isCorrect = !isTimeout && currentQuestion.answers.includes(selectedOption);
+            
+            // Find the actual category for this question (for folder quizzes)
+            const category = categories.find(cat => cat.id === (currentQuestion.categoryId || currentCategoryId));
+            if (!category) {
+                console.error("Could not find category for question!");
+                return;
+            }
+
+            // Find the actual question in its category
+            const originalQuestion = category.questions.find(q => q.id === questionId);
+            if (!originalQuestion) {
+                console.error("Could not find original question in category!");
+                return;
+            }
+
+            const wasMasteredBefore = originalQuestion.correctCount >= CORRECT_ANSWER_GOAL;
+
+            // Update UI for answer feedback
+            answerButtonsDiv.querySelectorAll('.answer-btn').forEach(btn => {
+                btn.disabled = true;
+                const isThisCorrect = currentQuestion.answers.includes(btn.textContent);
+                const isThisSelected = !isTimeout && btn.textContent === selectedOption;
+
+                if (isThisSelected) {
+                    btn.classList.add('selected-answer');
+                    if (isCorrect) {
+                        btn.classList.add('correct-answer');
+                    } else {
+                        btn.classList.add('incorrect-answer');
+                    }
+                } else if (isThisCorrect) {
+                    if (!isCorrect) {
+                        btn.classList.add('correct-answer');
+                        btn.classList.remove('opacity-60');
+                    } else {
+                        btn.classList.add('opacity-60');
+                    }
+                } else {
+                    btn.classList.add('opacity-60');
+                }
+            });
+
+            if (isCorrect) {
+                playSound(audioCorrect);
+                originalQuestion.correctCount++;
+                quizState.score += 10;
+
+                const isMasteredNow = originalQuestion.correctCount >= CORRECT_ANSWER_GOAL;
+
+                if (isMasteredNow) {
+                    if (!originalQuestion.masteredTimestamp) {
+                        originalQuestion.masteredTimestamp = Date.now();
+                    }
+                    feedbackArea.textContent = wasMasteredBefore ? "Correct!" : "Correct! ✨ Item Mastered!";
+                    feedbackArea.className = 'feedback-pop min-h-[30px] text-center font-semibold mb-4 text-green-600';
+                } else {
+                    feedbackArea.textContent = `Correct! Progress: ${originalQuestion.correctCount}/${CORRECT_ANSWER_GOAL}`;
+                    feedbackArea.className = 'feedback-pop min-h-[30px] text-center font-semibold mb-4 text-green-600';
+                }
+
+                quizState.recentCorrect.push(questionId);
+                while (quizState.recentCorrect.length > CORRECT_QUESTION_SKIP_COUNT) {
+                    quizState.recentCorrect.shift();
+                }
+                quizState.incorrectQueue = quizState.incorrectQueue.filter(item => item.id !== questionId);
+
+            } else {
+                playSound(audioWrong);
+                quizState.score = Math.max(0, quizState.score - 5);
+
+                if (!wasMasteredBefore && originalQuestion.correctCount > 0) {
+                    feedbackArea.textContent = isTimeout ? "Time's up! Progress reset." : "Incorrect! Progress reset.";
+                    originalQuestion.correctCount = 0;
+                } else {
+                    feedbackArea.textContent = isTimeout ? "Time's up!" : "Incorrect!";
+                }
+                feedbackArea.className = 'feedback-pop min-h-[30px] text-center font-semibold mb-4 text-red-600';
+
+                correctAnswerReveal.textContent = `Correct answer${currentQuestion.answers.length > 1 ? 's' : ''}: ${currentQuestion.answers.join(' / ')}`;
+                showElement(correctAnswerReveal);
+
+                if (!wasMasteredBefore) {
+                    const existingIndex = quizState.incorrectQueue.findIndex(item => item.id === questionId);
+                    if (existingIndex === -1) {
+                        quizState.incorrectQueue.push({ id: questionId, skipCount: INCORRECT_QUESTION_SKIP_COUNT });
+                    } else {
+                        quizState.incorrectQueue[existingIndex].skipCount = INCORRECT_QUESTION_SKIP_COUNT;
+                    }
+                }
+            }
+
+            saveData();
+            updateScore();
+            updateProgress();
+            showElement(feedbackArea);
+            showElement(nextQuestionBtn);
+
+            // For folder quizzes, show which category the question was from
+            if (currentQuestion.categoryName) {
+                const categoryInfo = document.createElement('div');
+                categoryInfo.className = 'text-sm text-gray-600 mt-2';
+                categoryInfo.textContent = `From: ${currentQuestion.categoryName}`;
+                feedbackArea.appendChild(categoryInfo);
+            }
+
+            // Check if all questions in all relevant categories are mastered
+            const relevantCategories = currentQuestion.categoryId ? 
+                categories.filter(cat => cat.folderId === folders.find(f => 
+                    f.id === categories.find(c => c.id === currentQuestion.categoryId)?.folderId
+                )?.id) :
+                [category];
+
+            const allMasteredNow = relevantCategories.every(cat => 
+                cat.questions.every(q => q.correctCount >= CORRECT_ANSWER_GOAL)
+            );
+
+            if (allMasteredNow) {
+                setTimeout(() => handleGameEnd(true), 600);
+            }
+        }
+
+        // Update displayQuestion to handle folder quiz questions
+        function displayQuestion(qIndex) {
+            if (!quizState.quizActive) return;
+
+            // Handle cases where no valid question index is found
+            if (qIndex === -1) {
+                // console.log("No eligible question index found. Checking game end/unavailable conditions.");
+                const now = Date.now();
+                // Check if ALL questions are mastered (regardless of cooldown for this check)
+                const allMastered = currentQuizQuestions.every(q => q.correctCount >= CORRECT_ANSWER_GOAL);
+
+                 if (allMastered && currentQuizQuestions.length > 0) {
+                     handleGameEnd(true); // All items achieved mastery goal
+                 } else {
+                     // If not all mastered, but none are currently SELECTABLE, show unavailable message
+                     showQuizUnavailableMessage();
+                 }
+                return;
+            }
+
+            // --- Setup UI for the new question ---
+            showElement(questionDisplay);
+            showElement(answerButtonsDiv);
+            hideElement(feedbackArea); // Hide until feedback is given
+            hideElement(correctAnswerReveal); // Hide until needed
+            hideElement(nextQuestionBtn);
+            hideElement(quizUnavailableView);
+            hideElement(gameEndView);
+            // Clear previous feedback text and styles
+            feedbackArea.textContent = '';
+            feedbackArea.className = 'min-h-[30px] text-center font-semibold mb-4';
+            correctAnswerReveal.textContent = '';
+
+            quizState.currentQuestionIndex = qIndex;
+            const question = currentQuizQuestions[qIndex];
+            if (!question) {
+                console.error("Invalid question object at index:", qIndex);
+                selectAndDisplayQuestion(); // Try selecting another one
+                return;
+            }
+
+            questionDisplay.textContent = question.text;
+            answerButtonsDiv.innerHTML = '';
+
+            // --- Prepare Answer Options ---
+            const correctAnswers = question.answers;
+            const chosenCorrectAnswer = correctAnswers[Math.floor(Math.random() * correctAnswers.length)];
+
+            // Gather potential incorrect options from other questions in the *same category*
+            let incorrectOptions = [];
+            currentQuizQuestions.forEach((otherQ) => {
+                if (otherQ.id !== question.id && Array.isArray(otherQ.answers)) {
+                    otherQ.answers.forEach(ans => {
+                        // Add if it's not one of the correct answers for the *current* question AND not empty
+                        if (ans.trim() !== '' && !correctAnswers.includes(ans)) {
+                            incorrectOptions.push(ans);
+                        }
+                    });
+                }
+            });
+
+            // Deduplicate and shuffle incorrect options
+            incorrectOptions = [...new Set(incorrectOptions)];
+            for (let i = incorrectOptions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [incorrectOptions[i], incorrectOptions[j]] = [incorrectOptions[j], incorrectOptions[i]];
+            }
+
+            // Select up to (MAX_ANSWERS_PER_QUESTION - 1) unique incorrect options
+            let finalIncorrectAnswers = incorrectOptions.slice(0, MAX_ANSWERS_PER_QUESTION - 1);
+
+            // Combine correct and incorrect, then shuffle
+            let answerOptions = [chosenCorrectAnswer, ...finalIncorrectAnswers];
+            // Ensure we don't exceed max options if few incorrect were found
+            answerOptions = answerOptions.slice(0, MAX_ANSWERS_PER_QUESTION);
+
+            for (let i = answerOptions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [answerOptions[i], answerOptions[j]] = [answerOptions[j], answerOptions[i]];
+            }
+
+            // Create and append answer buttons
+            answerOptions.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                // Use btn-subtle for base, makes highlighting clearer
+                // <<< ADDED btn class for consistent styling/click sound >>>
+                button.className = 'answer-btn btn btn-subtle w-full text-gray-800 py-3 px-4 border border-gray-300 min-h-[50px] text-left';
+                button.addEventListener('click', () => handleAnswerSelection(option, question.id));
+                answerButtonsDiv.appendChild(button);
+            });
+
+            startTimer(question.id);
+        }
+    });
+    </script>
+
+</body>
+</html>
