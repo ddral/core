@@ -54,6 +54,66 @@
             background: linear-gradient(135deg, #f6f9fc 0%, #edf2f7 100%);
             min-height: 100vh;
             position: relative;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Mobile touch improvements */
+        @media (max-width: 640px) {
+            .btn, button, a {
+                min-height: 44px;
+                min-width: 44px;
+                padding: 0.75rem 1rem;
+                touch-action: manipulation;
+            }
+
+            input[type="text"],
+            input[type="number"],
+            input[type="email"],
+            input[type="password"],
+            textarea {
+                font-size: 16px; /* Prevents iOS zoom on focus */
+                min-height: 44px;
+            }
+
+            .answer-btn {
+                min-height: 54px;
+                padding: 1rem;
+                margin-bottom: 0.5rem;
+            }
+        }
+
+        /* Improved touch feedback */
+        @media (hover: none) {
+            .btn:active,
+            button:active,
+            a:active {
+                transform: scale(0.98);
+                transition: transform 0.1s;
+            }
+
+            .answer-btn:active {
+                background-color: rgba(13, 115, 119, 0.1);
+            }
+        }
+
+        /* Prevent text selection on buttons */
+        .btn, button {
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        /* Add active state for touch devices */
+        .btn:active,
+        button:active {
+            transition: all 0.1s ease;
+        }
+
+        /* Improve scrolling on mobile */
+        .modal-content,
+        #category-list-container,
+        #question-list-container {
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
         }
 
         body::before {
@@ -111,6 +171,7 @@
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.3s ease, visibility 0.3s ease;
+            padding: 1rem;
         }
         .modal:not(.hidden) {
              opacity: 1;
@@ -120,19 +181,22 @@
         .modal-content {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(12px);
-            padding: 2.5rem;
-            border-radius: 1.5rem;
+            padding: 1.5rem;
+            border-radius: 1rem;
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
-            min-width: 350px;
-            max-width: 90%;
-            width: auto;
-            max-width: 500px;
+            width: 100%;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
             transform: scale(0.95) translateY(10px);
             transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
             border: 1px solid rgba(255, 255, 255, 0.5);
         }
-        .modal:not(.hidden) .modal-content {
-            transform: scale(1) translateY(0);
+        @media (min-width: 640px) {
+            .modal-content {
+                padding: 2.5rem;
+                max-width: 500px;
+            }
         }
 
          /* Animation for feedback */
@@ -598,41 +662,119 @@
             border-radius: 0.5rem;
             padding: 1rem;
         }
+
+        /* Mobile action menu styles */
+        .category-item {
+            position: relative;
+        }
+
+        .category-actions {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        @media (hover: hover) {
+            .category-item:hover .category-actions {
+                opacity: 1;
+            }
+        }
+
+        @media (hover: none) {
+            .category-actions {
+                opacity: 1;
+                position: absolute;
+                right: 0.5rem;
+                top: 50%;
+                transform: translateY(-50%);
+            }
+
+            .action-menu-trigger {
+                padding: 0.5rem;
+                border-radius: 0.375rem;
+                background: rgba(255, 255, 255, 0.9);
+                border: 1px solid rgba(13, 115, 119, 0.2);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 36px;
+                height: 36px;
+            }
+
+            .action-menu {
+                position: absolute;
+                right: 0;
+                top: 100%;
+                background: white;
+                border: 1px solid rgba(13, 115, 119, 0.2);
+                border-radius: 0.5rem;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                padding: 0.5rem;
+                z-index: 10;
+                min-width: 140px;
+                display: none;
+            }
+
+            .action-menu.show {
+                display: block;
+            }
+
+            .action-menu button {
+                display: flex;
+                align-items: center;
+                width: 100%;
+                padding: 0.75rem 1rem;
+                text-align: left;
+                border-radius: 0.375rem;
+                font-weight: 500;
+            }
+
+            .action-menu button:hover {
+                background: rgba(13, 115, 119, 0.1);
+            }
+
+            .action-menu button.delete {
+                color: #dc2626;
+            }
+
+            .action-menu button.delete:hover {
+                background: rgba(220, 38, 38, 0.1);
+            }
+        }
     </style>
 </head>
-<body class="bg-gradient-to-br from-brand-lightgray to-gray-100 font-sans text-brand-charcoal min-h-screen flex items-center justify-center p-4 md:p-6">
+<body class="bg-gradient-to-br from-brand-lightgray to-gray-100 font-sans text-brand-charcoal min-h-screen flex items-center justify-center p-2 sm:p-4 md:p-6">
 
     <!-- Add this right after the body tag -->
-    <div class="toast-container"></div>
+    <div class="toast-container bottom-2 right-2 sm:bottom-4 sm:right-4"></div>
 
     <!-- Add this before your app container -->
     <div class="modal-backdrop hidden"></div>
 
-    <div id="app-container" class="w-full max-w-4xl bg-white rounded-xl shadow-card p-8 md:p-12">
+    <div id="app-container" class="w-full max-w-4xl bg-white rounded-lg sm:rounded-xl shadow-card p-4 sm:p-8 md:p-12">
 
         <!-- ========= Landing View ========= -->
         <div id="landing-view">
-            <h1 class="text-5xl md:text-6xl font-serif font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-purple-600 mb-4 gradient-text">
+            <h1 class="text-4xl sm:text-5xl md:text-6xl font-serif font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-purple-600 mb-2 sm:mb-4 gradient-text">
                 Quizly
             </h1>
-            <p class="text-xl text-center text-gray-600 mb-10">
+            <p class="text-lg sm:text-xl text-center text-gray-600 mb-6 sm:mb-10">
                 Prepare yourself to quizz!
             </p>
-            <div class="flex flex-col items-center space-y-5">
-                <button id="start-quiz-btn" class="btn btn-primary py-3 px-10 text-lg uppercase tracking-wider">
+            <div class="flex flex-col items-center space-y-4">
+                <button id="start-quiz-btn" class="btn btn-primary w-full sm:w-auto py-3 px-6 sm:px-10 text-base sm:text-lg uppercase tracking-wider">
                     Quizz Me!
                 </button>
-                <button id="go-to-admin-btn" class="btn btn-secondary">
+                <button id="go-to-admin-btn" class="btn btn-secondary w-full sm:w-auto">
                     Add a quizle!
                 </button>
                 <!-- Display Total Score -->
-                <div id="total-score-display" class="text-lg font-semibold text-brand-charcoal hidden">
+                <div id="total-score-display" class="text-base sm:text-lg font-semibold text-brand-charcoal hidden">
                     Quizz Points: <span id="total-score-value">0</span>
                 </div>
                 <a href="https://ko-fi.com/cooldev"  
                     target="_blank" 
                     rel="noopener noreferrer" 
-                    class="btn btn-accent inline-block text-center">
+                    class="btn btn-accent w-full sm:w-auto text-center">
                     ☕ Support the QuizMaster
                 </a> 
             </div>
@@ -724,42 +866,42 @@
         <!-- ========= Quiz Gameplay View ========= -->
         <div id="quiz-gameplay-view" class="hidden">
             <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-2">
-                <h2 id="quiz-category-title" class="text-2xl font-serif font-bold text-brand-teal mb-1 sm:mb-0">Playing Category...</h2>
-                <button id="exit-quiz-btn" class="btn !text-red-600 hover:!text-red-800 self-start sm:self-center">Exit Quiz</button>
+                <h2 id="quiz-category-title" class="text-xl sm:text-2xl font-serif font-bold text-brand-teal mb-1 sm:mb-0">Playing Category...</h2>
+                <button id="exit-quiz-btn" class="btn !text-red-600 hover:!text-red-800 self-start sm:self-center text-sm sm:text-base">Exit Quiz</button>
             </div>
             <!-- Progress and Score -->
-            <div class="flex flex-wrap justify-between items-center mb-6 text-sm text-gray-600 bg-brand-subtle p-3 rounded-md shadow-inner">
-                <span id="progress-indicator" class="font-medium">Item X/Y</span>
-                <span id="score-indicator" class="font-bold text-lg text-brand-teal">Score: 0</span>
-                <span id="timer-display" class="font-mono font-semibold text-lg px-2 py-1 rounded"></span>
+            <div class="flex flex-wrap gap-2 justify-between items-center mb-4 sm:mb-6 text-sm text-gray-600 bg-brand-subtle p-2 sm:p-3 rounded-md shadow-inner">
+                <span id="progress-indicator" class="font-medium text-sm sm:text-base">Item X/Y</span>
+                <span id="score-indicator" class="font-bold text-base sm:text-lg text-brand-teal">Score: 0</span>
+                <span id="timer-display" class="font-mono font-semibold text-base sm:text-lg px-2 py-1 rounded"></span>
             </div>
             <!-- Question Display -->
-            <div id="question-display" class="text-2xl md:text-3xl font-serif font-semibold mb-8 p-6 bg-brand-teal/10 border-l-4 border-brand-teal rounded-md text-center text-brand-charcoal min-h-[80px] flex items-center justify-center shadow-subtle">
+            <div id="question-display" class="text-xl sm:text-2xl md:text-3xl font-serif font-semibold mb-6 sm:mb-8 p-4 sm:p-6 bg-brand-teal/10 border-l-4 border-brand-teal rounded-md text-center text-brand-charcoal min-h-[80px] flex items-center justify-center shadow-subtle">
                 Question text goes here...
             </div>
             <!-- Answer Buttons -->
-            <div id="answer-buttons" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+            <div id="answer-buttons" class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-5">
                 <!-- Answer buttons dynamically added here -->
             </div>
             <!-- Feedback Area -->
-            <div id="feedback-area" class="min-h-[30px] text-center font-semibold text-lg mb-4"></div>
-             <!-- Correct Answer Reveal -->
-            <div id="correct-answer-reveal" class="text-center text-sm text-gray-600 mb-4 min-h-[20px]"></div>
+            <div id="feedback-area" class="min-h-[30px] text-center font-semibold text-base sm:text-lg mb-3 sm:mb-4"></div>
+            <!-- Correct Answer Reveal -->
+            <div id="correct-answer-reveal" class="text-center text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4 min-h-[20px]"></div>
             <!-- Next Question Button -->
-            <button id="next-question-btn" class="w-full btn btn-primary py-3 text-base hidden"> <!-- Added btn class -->
+            <button id="next-question-btn" class="w-full btn btn-primary py-2 sm:py-3 text-base hidden">
                 Continue
             </button>
             <!-- Game End View -->
-            <div id="game-end-view" class="hidden text-center mt-10 p-8 bg-green-50 border border-green-200 rounded-lg shadow-subtle">
-                <h2 class="text-3xl font-serif font-bold text-green-700 mb-3">Quiz Complete!</h2>
-                <p id="game-end-message" class="text-lg text-gray-700 mb-5">You've finished the quiz!</p>
-                <p id="final-score" class="text-xl font-semibold text-brand-charcoal mb-6"></p>
-                <p id="mastery-bonus-message" class="text-md font-semibold text-brand-gold-dark mb-5 hidden"></p> <!-- Bonus message -->
-                <div class="flex flex-wrap justify-center gap-4">
-                    <button id="play-again-btn" class="btn btn-primary"> <!-- Added btn class -->
+            <div id="game-end-view" class="hidden text-center mt-6 sm:mt-10 p-6 sm:p-8 bg-green-50 border border-green-200 rounded-lg shadow-subtle">
+                <h2 class="text-2xl sm:text-3xl font-serif font-bold text-green-700 mb-2 sm:mb-3">Quiz Complete!</h2>
+                <p id="game-end-message" class="text-base sm:text-lg text-gray-700 mb-4 sm:mb-5">You've finished the quiz!</p>
+                <p id="final-score" class="text-lg sm:text-xl font-semibold text-brand-charcoal mb-4 sm:mb-6"></p>
+                <p id="mastery-bonus-message" class="text-sm sm:text-md font-semibold text-brand-gold-dark mb-4 sm:mb-5 hidden"></p>
+                <div class="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4">
+                    <button id="play-again-btn" class="btn btn-primary w-full sm:w-auto">
                         Play Again
                     </button>
-                    <button id="back-to-categories-from-end-btn" class="btn btn-secondary"> <!-- Added btn class -->
+                    <button id="back-to-categories-from-end-btn" class="btn btn-secondary w-full sm:w-auto">
                         Return to your quizles!
                     </button>
                 </div>
@@ -779,13 +921,13 @@
         <!-- Add Category Modal -->
         <div id="add-category-modal" class="modal hidden">
             <div class="modal-content">
-                <h3 class="text-2xl font-serif font-semibold mb-5 text-brand-teal">Create New Quizle</h3>
+                <h3 class="text-xl sm:text-2xl font-serif font-semibold mb-4 sm:mb-5 text-brand-teal">Create New Quizle</h3>
                 <label for="category-name-input" class="block text-sm font-medium text-gray-700 mb-1">Name your quizle!</label>
-                <input type="text" id="category-name-input" placeholder="e.g., World Capitals Trivia" class="w-full p-3 border border-gray-300 rounded-md mb-1 focus:ring-brand-teal/50 focus:border-brand-teal bg-white shadow-inner text-base">
-                <p id="category-name-error" class="text-red-600 text-xs mt-1 mb-4 hidden">Oh, no! You forgot to name your quizle!</p>
-                <div class="flex justify-end space-x-3 mt-6">
-                    <button id="cancel-add-category-btn" class="btn">Cancel</button> <!-- Added btn class -->
-                    <button id="save-category-btn" class="btn btn-primary">Save Quizle</button> <!-- Added btn class -->
+                <input type="text" id="category-name-input" placeholder="e.g., World Capitals Trivia" class="w-full p-2 sm:p-3 border border-gray-300 rounded-md mb-1 focus:ring-brand-teal/50 focus:border-brand-teal bg-white shadow-inner text-base">
+                <p id="category-name-error" class="text-red-600 text-xs mt-1 mb-3 sm:mb-4 hidden">Oh, no! You forgot to name your quizle!</p>
+                <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-4 sm:mt-6">
+                    <button id="cancel-add-category-btn" class="btn w-full sm:w-auto">Cancel</button>
+                    <button id="save-category-btn" class="btn btn-primary w-full sm:w-auto">Save Quizle</button>
                 </div>
             </div>
         </div>
@@ -2561,12 +2703,12 @@ document.addEventListener('DOMContentLoaded', () => {
                      data-category-id="${category.id}" draggable="true">
                     <div class="flex justify-between items-center">
                         <span class="font-semibold text-gray-800 flex-1 mr-3 truncate category-name" title="${category.name}">${category.name}</span>
-                        <span class="text-sm font-medium text-white bg-blue-500 rounded-full px-2.5 py-0.5 mr-3">${category.questions.length}</span>
                         <div class="category-actions space-x-2">
                             <button class="rename-category-btn text-xs text-blue-600 hover:text-blue-800">Rename</button>
                             <button class="export-category-btn text-xs text-green-600 hover:text-green-800">Export</button>
                             <button class="delete-category-btn text-xs text-red-600 hover:text-red-800">Delete</button>
                         </div>
+                        <span class="text-sm font-medium text-white bg-blue-500 rounded-full px-2.5 py-0.5 mr-3">${category.questions.length}</span>
                     </div>
                 </div>
             `;
@@ -3171,6 +3313,66 @@ document.addEventListener('DOMContentLoaded', () => {
             startTimer(question.id);
         }
     });
+
+    // Add this near the top of your JavaScript code
+    let wasPlayingBeforeHidden = false;
+    
+    // Handle visibility change
+    document.addEventListener('visibilitychange', () => {
+        const audioBg = document.getElementById('audio-bg');
+        
+        if (document.hidden) {
+            // Tab is hidden
+            if (!audioBg.paused) {
+                wasPlayingBeforeHidden = true;
+                audioBg.pause();
+            }
+        } else {
+            // Tab is visible again
+            if (wasPlayingBeforeHidden) {
+                audioBg.play();
+                wasPlayingBeforeHidden = false;
+            }
+        }
+    });
+
+    // Update your existing playSound function to handle background music
+    function playSound(audio, options = {}) {
+        if (!audio) return;
+        
+        // If it's background music, check if we're visible first
+        if (audio.id === 'audio-bg' && document.hidden) {
+            return;
+        }
+        
+        if (options.loop !== undefined) {
+            audio.loop = options.loop;
+        }
+        
+        if (options.volume !== undefined) {
+            audio.volume = options.volume;
+        }
+        
+        const playPromise = audio.play();
+        
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.log("Audio playback failed:", error);
+            });
+        }
+    }
+
+    // Update your existing stopSound function
+    function stopSound(audio) {
+        if (!audio) return;
+        
+        if (audio.id === 'audio-bg') {
+            wasPlayingBeforeHidden = false;
+        }
+        
+        audio.pause();
+        audio.currentTime = 0;
+    }
     </script>
 
 </body>
