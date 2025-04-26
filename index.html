@@ -871,9 +871,9 @@
             </div>
             <!-- Progress and Score -->
             <div class="flex flex-wrap gap-2 justify-between items-center mb-4 sm:mb-6 text-sm text-gray-600 bg-brand-subtle p-2 sm:p-3 rounded-md shadow-inner">
-                <span id="progress-indicator" class="font-medium text-sm sm:text-base">Item X/Y</span>
-                <span id="score-indicator" class="font-bold text-base sm:text-lg text-brand-teal">Score: 0</span>
-                <span id="timer-display" class="font-mono font-semibold text-base sm:text-lg px-2 py-1 rounded"></span>
+                <div id="progress-indicator" class="font-medium text-sm sm:text-base">Progress: 0/0</div>
+                <div id="score-indicator" class="font-bold text-base sm:text-lg text-brand-teal">Score: 0</div>
+                <div id="timer-display" class="font-mono font-semibold text-base sm:text-lg px-2 py-1 rounded"></div>
             </div>
             <!-- Question Display -->
             <div id="question-display" class="text-xl sm:text-2xl md:text-3xl font-serif font-semibold mb-6 sm:mb-8 p-4 sm:p-6 bg-brand-teal/10 border-l-4 border-brand-teal rounded-md text-center text-brand-charcoal min-h-[80px] flex items-center justify-center shadow-subtle">
@@ -1956,73 +1956,33 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleModal(categorySelectionModal, true);
     }
     function startQuiz(categoryId) {
-        if (!quizGameplayView || !quizCategoryTitle) {
-            console.error("Quiz gameplay view or title element missing!");
-                showToast('Error', 'Quiz interface is not properly initialized.', 'error');
-                showView('landing');
-            return;
-        }
-
-            currentCategoryId = categoryId;
+        resetExpiredMasteredItems();
         const category = categories.find(cat => cat.id === categoryId);
+        if (!category) return;
 
-        if (!category || !Array.isArray(category.questions) || category.questions.length < MIN_QUESTIONS_TO_PLAY) {
-            console.error("Cannot start quiz. Category invalid or insufficient questions:", { categoryId, category });
-                showToast('Cannot Start Quiz', `This quiz needs at least ${MIN_QUESTIONS_TO_PLAY} questions to play.`, 'error');
-            showCategorySelectionModal();
+        // Filter out mastered questions
+        const playableQuestions = category.questions.filter(q => !q.mastered);
+
+        if (playableQuestions.length < MIN_QUESTIONS_TO_PLAY) {
+            showToast('Not enough unmastered questions to play!', 'error');
             return;
         }
 
-            // Check again if there are *currently* playable items (not just total items)
-        const now = Date.now();
-        const playableNow = category.questions.filter(q => {
-            const isMastered = q.correctCount >= CORRECT_ANSWER_GOAL;
-            const cooldownExpired = isMastered && q.masteredTimestamp !== null && (now - q.masteredTimestamp) > MASTERED_COOLDOWN_MS;
-            return !isMastered || cooldownExpired;
-        });
+        const shuffledQuestions = shuffleArray(playableQuestions);
+        currentQuiz = {
+            questions: shuffledQuestions,
+            currentQuestionIndex: 0,
+            score: 0,
+            isFolder: false
+        };
 
-        if (playableNow.length === 0) {
-            quizCategoryTitle.textContent = `Category: ${category.name}`;
-                showView('quiz');
-            hideElement(questionDisplay);
-            hideElement(answerButtonsDiv);
-            hideElement(feedbackArea);
-            hideElement(correctAnswerReveal);
-            hideElement(nextQuestionBtn);
-            hideElement(gameEndView);
-                showElement(quizUnavailableView); // Show the specific "unavailable" view
-                // Set score/progress displays to reflect no active game
-                scoreIndicator.textContent = 'Score: -';
-                progressIndicator.textContent = 'Progress: -/-';
-                timerDisplay.textContent = '';
-                quizState.quizActive = false; // Ensure quiz is marked inactive
-            return;
-        }
-
-        // Initialize quiz state
-            currentQuizQuestions = category.questions; // Use all questions for potential repeats and progress tracking
-        quizState.originalCategoryQuestionCount = currentQuizQuestions.length;
-            quizState.currentQuestionIndex = -1;
-        quizState.score = 0;
-            quizState.recentCorrect = [];
-            quizState.incorrectQueue = [];
-        quizState.timerInterval = null;
-        quizState.timerValue = TIMER_DURATION;
-            quizState.quizActive = true;
-
-        // Setup UI for quiz start
-        quizCategoryTitle.textContent = `Category: ${category.name}`;
-            updateScore(); // Reset score display
-            updateProgress(); // Update initial progress display
-        hideElement(gameEndView);
-        hideElement(quizUnavailableView);
-        showElement(questionDisplay); // Ensure main game elements are visible
-        showElement(answerButtonsDiv);
-            showElement(feedbackArea); // Might be empty, but show the space
-            showElement(correctAnswerReveal); // Might be empty, but show the space
-            showView('quiz');
-
-        selectAndDisplayQuestion(); // Select the first question
+        // Update UI elements
+        document.getElementById('quiz-category-title').textContent = `Playing: ${category.name}`;
+        document.getElementById('progress-indicator').textContent = `Progress: 1/${shuffledQuestions.length}`;
+        document.getElementById('score-indicator').textContent = 'Score: 0';
+        
+        showView('quiz-gameplay-view');
+        displayCurrentQuestion();
     }
     function isQuestionEligible(question, now) {
              if (!question) return false;
@@ -3372,6 +3332,293 @@ document.addEventListener('DOMContentLoaded', () => {
         
         audio.pause();
         audio.currentTime = 0;
+    }
+
+    // Add these utility functions for time handling
+    function getCurrentTimestamp() {
+        return new Date().getTime();
+    }
+
+    function hasExpired(timestamp) {
+        if (!timestamp) return true;
+        const THREE_HOURS = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+        const now = getCurrentTimestamp();
+        return (now - timestamp) >= THREE_HOURS;
+    }
+
+    // Update the markQuestionAsMastered function to include timestamp
+    function markQuestionAsMastered(categoryId, questionId) {
+        const category = categories.find(cat => cat.id === categoryId);
+        if (!category) return;
+
+        const question = category.questions.find(q => q.id === questionId);
+        if (!question) return;
+
+        question.mastered = true;
+        question.masteredTimestamp = getCurrentTimestamp();
+        saveCategories();
+    }
+
+    // Add function to check and reset expired mastered status
+    function resetExpiredMasteredItems() {
+        let hasChanges = false;
+        categories.forEach(category => {
+            category.questions.forEach(question => {
+                if (question.mastered && hasExpired(question.masteredTimestamp)) {
+                    question.mastered = false;
+                    delete question.masteredTimestamp;
+                    hasChanges = true;
+                }
+            });
+        });
+        if (hasChanges) {
+            saveCategories();
+            // Refresh the UI if needed
+            if (currentCategoryId) {
+                updateQuestionList();
+            }
+        }
+    }
+
+    // Update loadCategories function to check for expired items
+    function loadCategories() {
+        const savedCategories = localStorage.getItem('quizCategories');
+        if (savedCategories) {
+            categories = JSON.parse(savedCategories);
+            resetExpiredMasteredItems(); // Check for expired items on load
+        }
+        updateCategoryList();
+    }
+
+    // Add periodic check for expired items
+    setInterval(resetExpiredMasteredItems, 5 * 60 * 1000); // Check every 5 minutes
+
+    // Update the initialization code to start the timer
+    document.addEventListener('DOMContentLoaded', () => {
+        loadCategories();
+        resetExpiredMasteredItems(); // Initial check
+        // ... rest of your initialization code ...
+    });
+
+    // Update showCategoryDetail to reflect current mastery status
+    function showCategoryDetail(categoryId) {
+        resetExpiredMasteredItems(); // Check for expired items when viewing category
+        // ... rest of your showCategoryDetail code ...
+    }
+
+    // Update startQuiz to ensure fresh mastery status
+    function startQuiz(categoryId) {
+        resetExpiredMasteredItems(); // Check for expired items before starting quiz
+        // ... rest of your startQuiz code ...
+    }
+
+    // Update startFolderQuiz function to handle mastery tracking
+    function startFolderQuiz(folderId) {
+        const folder = folders.find(f => f.id === folderId);
+        if (!folder) return;
+
+        // Get all categories in the folder
+        const folderCategories = categories.filter(cat => cat.folderId === folderId);
+        if (folderCategories.length === 0) return;
+
+        // Collect all playable questions from the folder's categories
+        let allQuestions = [];
+        folderCategories.forEach(category => {
+            category.questions.forEach(question => {
+                // Add category reference to each question for tracking
+                allQuestions.push({
+                    ...question,
+                    categoryId: category.id,
+                    categoryName: category.name
+                });
+            });
+        });
+
+        // Filter out mastered questions if needed
+        const playableQuestions = allQuestions.filter(q => !q.mastered);
+
+        if (playableQuestions.length < MIN_QUESTIONS_TO_PLAY) {
+            showToast('Not enough unmastered questions to play!', 'error');
+            return;
+        }
+
+        // Shuffle the questions
+        const shuffledQuestions = shuffleArray(playableQuestions);
+        
+        // Set up the quiz state
+        currentQuiz = {
+            questions: shuffledQuestions,
+            currentQuestionIndex: 0,
+            score: 0,
+            isFolder: true,
+            folderId: folderId,
+            folderName: folder.name
+        };
+
+        // Update UI elements
+        document.getElementById('quiz-category-title').textContent = `Playing: ${folder.name}`;
+        document.getElementById('progress-indicator').textContent = `Progress: 1/${shuffledQuestions.length}`;
+        document.getElementById('score-indicator').textContent = 'Score: 0';
+        
+        showView('quiz-gameplay-view');
+        displayCurrentQuestion();
+    }
+
+    function updateQuizProgress() {
+        if (!currentQuiz || !currentQuiz.questions) return;
+
+        const progressIndicator = document.getElementById('progress-indicator');
+        const currentIndex = currentQuiz.currentQuestionIndex + 1;
+        const totalQuestions = currentQuiz.questions.length;
+        
+        if (progressIndicator) {
+            progressIndicator.textContent = `Progress: ${currentIndex}/${totalQuestions}`;
+        }
+
+        const scoreIndicator = document.getElementById('score-indicator');
+        if (scoreIndicator) {
+            scoreIndicator.textContent = `Score: ${currentQuiz.score}`;
+        }
+    }
+
+    function displayCurrentQuestion() {
+        if (!currentQuiz || !currentQuiz.questions || currentQuiz.currentQuestionIndex >= currentQuiz.questions.length) {
+            handleQuizEnd();
+            return;
+        }
+
+        // Reset state for new question
+        currentQuiz.answerSelected = false;
+        
+        const currentQuestion = currentQuiz.questions[currentQuiz.currentQuestionIndex];
+        
+        // Update question display
+        const questionDisplay = document.getElementById('question-display');
+        questionDisplay.textContent = currentQuestion.text;
+        
+        // Update progress
+        updateQuizProgress();
+
+        // Clear previous feedback
+        const feedbackArea = document.getElementById('feedback-area');
+        feedbackArea.textContent = '';
+        hideElement(document.getElementById('correct-answer-reveal'));
+        hideElement(document.getElementById('next-question-btn'));
+
+        // Generate and shuffle answer buttons
+        generateAnswerButtons(currentQuestion);
+    }
+
+    // Add function to handle moving to next question
+    function handleNextQuestion() {
+        if (!currentQuiz) return;
+        
+        currentQuiz.currentQuestionIndex++;
+        if (currentQuiz.currentQuestionIndex >= currentQuiz.questions.length) {
+            handleQuizEnd();
+        } else {
+            displayCurrentQuestion();
+        }
+    }
+
+    // Update handleAnswer function to work with folder quizzes
+    function handleAnswer(selectedAnswer) {
+        if (!currentQuiz || currentQuiz.answerSelected) return;
+
+        const currentQuestion = currentQuiz.questions[currentQuiz.currentQuestionIndex];
+        const isCorrect = currentQuestion.answers.some(answer => 
+            answer.toLowerCase().trim() === selectedAnswer.toLowerCase().trim()
+        );
+
+        // Mark answer as selected to prevent multiple selections
+        currentQuiz.answerSelected = true;
+
+        // Update UI for correct/incorrect answer
+        const selectedButton = document.querySelector(`button[data-answer="${selectedAnswer}"]`);
+        if (isCorrect) {
+            selectedButton.classList.add('correct-answer');
+            currentQuiz.score++;
+            
+            // Track mastery progress
+            if (currentQuiz.isFolder) {
+                // For folder quizzes, we need to use the stored categoryId
+                markQuestionAsMastered(currentQuestion.categoryId, currentQuestion.id);
+            } else {
+                // For regular category quizzes
+                markQuestionAsMastered(currentCategoryId, currentQuestion.id);
+            }
+            
+            playSound(audioCorrect);
+            showFeedback('Correct! 🎉', 'success');
+        } else {
+            selectedButton.classList.add('incorrect-answer');
+            playSound(audioWrong);
+            showFeedback(`Incorrect. The correct answer${currentQuestion.answers.length > 1 ? 's are' : ' is'}: ${currentQuestion.answers.join(' or ')}`, 'error');
+        }
+
+        // Show next question button
+        showElement(document.getElementById('next-question-btn'));
+    }
+
+    // Update the quiz end handling for folders
+    function handleQuizEnd() {
+        const gameEndView = document.getElementById('game-end-view');
+        const finalScore = document.getElementById('final-score');
+        const gameEndMessage = document.getElementById('game-end-message');
+        const masteryBonusMessage = document.getElementById('mastery-bonus-message');
+        
+        // Calculate completion percentage
+        const totalQuestions = currentQuiz.questions.length;
+        const scorePercentage = (currentQuiz.score / totalQuestions) * 100;
+        
+        // Update final score display
+        finalScore.textContent = `Final Score: ${currentQuiz.score}/${totalQuestions} (${Math.round(scorePercentage)}%)`;
+        
+        // Determine message based on score
+        if (scorePercentage === 100) {
+            gameEndMessage.textContent = "Perfect score! You're a quiz master! 🏆";
+            playSound(audioCongrats);
+        } else if (scorePercentage >= 80) {
+            gameEndMessage.textContent = "Great job! Almost perfect! 🌟";
+            playSound(audioCongrats);
+        } else if (scorePercentage >= 60) {
+            gameEndMessage.textContent = "Good effort! Keep practicing! 👍";
+        } else {
+            gameEndMessage.textContent = "Don't give up! Try again! 💪";
+        }
+
+        // Show mastery bonus message if applicable
+        if (currentQuiz.isFolder) {
+            const masteredCount = currentQuiz.questions.filter(q => q.mastered).length;
+            if (masteredCount > 0) {
+                masteryBonusMessage.textContent = `You've mastered ${masteredCount} new items in this folder!`;
+                showElement(masteryBonusMessage);
+            } else {
+                hideElement(masteryBonusMessage);
+            }
+        }
+
+        hideElement(document.getElementById('quiz-gameplay-view'));
+        showElement(gameEndView);
+    }
+
+    // Update getFolderPlayableStatus to account for mastery
+    function getFolderPlayableStatus(folderId) {
+        const folderCategories = categories.filter(cat => cat.folderId === folderId);
+        let totalQuestions = 0;
+        let playableQuestions = 0;
+
+        folderCategories.forEach(category => {
+            totalQuestions += category.questions.length;
+            playableQuestions += category.questions.filter(q => !q.mastered).length;
+        });
+
+        return {
+            isPlayable: playableQuestions >= MIN_QUESTIONS_TO_PLAY,
+            categoryCount: folderCategories.length,
+            totalQuestions: totalQuestions,
+            playableCount: playableQuestions
+        };
     }
     </script>
 
