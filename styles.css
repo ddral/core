@@ -557,7 +557,7 @@ input:focus + .slider {
 }
 .close-button:hover, .close-button:focus {
     background: transparent !important;
-    box-shadow: none;
+    box-shadow: none !important;
     transform: scale(1.15) rotate(90deg);
     outline: none;
 }

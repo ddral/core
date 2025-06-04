@@ -242,6 +242,19 @@ function nextSlide() {
             // Remove from active words
             activeWords = activeWords.filter(w => w.id !== wordInList.id);
             saveWords();
+            
+            // If we've removed the last word, close slides
+            if (activeWords.length === 0) {
+                closeSlides();
+                return;
+            }
+            
+            // If we removed a word before the end, don't increment the slide index
+            if (currentSlideIndex >= activeWords.length) {
+                currentSlideIndex = 0;
+                currentCycle++;
+            }
+            
             showSlide();
             return;
         }
