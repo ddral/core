@@ -206,6 +206,13 @@ function startCycle() {
     showSlide();
     slideView.style.display = 'flex';
     document.body.style.overflow = 'hidden'; // Hide scrollbar
+    
+    // Add click event listener to slide content
+    const slideContent = document.querySelector('.slide-content');
+    slideContent.addEventListener('click', function(e) {
+        e.stopPropagation(); // Prevent event from bubbling up
+        nextSlide();
+    });
 }
 
 function showSlide() {
