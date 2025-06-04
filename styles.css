@@ -2,6 +2,8 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    outline: none !important;
 }
 
 :root {
@@ -523,7 +525,7 @@ input:focus + .slider {
     min-height: 44px;
     max-height: 44px;
     border: none;
-    border-radius: 0;
+    border-radius: 10;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -536,8 +538,12 @@ input:focus + .slider {
     overflow: visible;
     backdrop-filter: none;
     box-sizing: border-box;
+    position: absolute;
 }
-
+.close-button:hover::before, .close-button:focus::before {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
 .close-button i {
     font-size: 2rem;
     font-weight: 700;
@@ -546,20 +552,18 @@ input:focus + .slider {
     color: #e53935;
     text-shadow: none;
     transition: color 0.18s, text-shadow 0.18s;
+    z-index: 1;
+    position: relative;
 }
-
 .close-button:hover, .close-button:focus {
     background: transparent !important;
     box-shadow: none;
     transform: scale(1.15) rotate(90deg);
     outline: none;
 }
-
 .close-button:hover i, .close-button:focus i {
     color: #b71c1c;
-    text-shadow: 0 0 8px #ffbdbd;
 }
-
 .close-button:active {
     transform: scale(0.96) rotate(90deg);
     box-shadow: none;
