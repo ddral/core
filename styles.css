@@ -855,4 +855,13 @@ input:focus + .slider {
 
 #cycle-count, #word-number {
     user-select: none;
+}
+
+input,
+button,
+label,
+select,
+textarea {
+    -webkit-tap-highlight-color: transparent;
+    outline: none !important;
 } 
