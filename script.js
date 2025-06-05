@@ -5,6 +5,7 @@ let currentCycle = 1;
 let maxCycles = parseInt(localStorage.getItem('maxCycles')) || 1;
 let isRecycleEnabled = JSON.parse(localStorage.getItem('isRecycleEnabled')) || false;
 let activeWords = []; // New array to store words for current session
+let wakeLock = null; // Add wake lock variable
 
 // DOM Elements
 const wordInput = document.getElementById('word-input');
@@ -192,13 +193,22 @@ function updateRecycleSetting() {
     localStorage.setItem('isRecycleEnabled', isRecycleEnabled);
 }
 
-function startCycle() {
+async function startCycle() {
     // Filter out completed words for this session
     activeWords = words.filter(w => !w.completed);
     
     if (activeWords.length === 0) {
         alert('No words available for learning! Add new words or reset completed ones.');
         return;
+    }
+    
+    // Request wake lock
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+        }
+    } catch (err) {
+        console.log('Wake Lock request failed:', err);
     }
     
     currentSlideIndex = 0;
@@ -287,6 +297,17 @@ function closeSlides() {
     slideView.style.display = 'none';
     document.body.style.overflow = '';
     updateWordList();
+    
+    // Release wake lock
+    if (wakeLock) {
+        wakeLock.release()
+            .then(() => {
+                wakeLock = null;
+            })
+            .catch(err => {
+                console.log('Wake Lock release failed:', err);
+            });
+    }
 }
 
 function handleKeyPress(e) {
@@ -298,6 +319,19 @@ function handleKeyPress(e) {
 function saveWords() {
     localStorage.setItem('words', JSON.stringify(words));
 }
+
+// Add visibility change handler to handle wake lock when page becomes visible again
+document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible' && slideView.style.display === 'flex') {
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+            }
+        } catch (err) {
+            console.log('Wake Lock request failed:', err);
+        }
+    }
+});
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
