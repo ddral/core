@@ -7,6 +7,33 @@ let isRecycleEnabled = JSON.parse(localStorage.getItem('isRecycleEnabled')) || f
 let activeWords = []; // New array to store words for current session
 let wakeLock = null; // Add wake lock variable
 
+// Add session state management
+function saveSessionState() {
+    const sessionState = {
+        currentSlideIndex,
+        currentCycle,
+        activeWords: activeWords.map(w => w.id)
+    };
+    localStorage.setItem('sessionState', JSON.stringify(sessionState));
+}
+
+function loadSessionState() {
+    const savedState = localStorage.getItem('sessionState');
+    if (savedState) {
+        const state = JSON.parse(savedState);
+        currentSlideIndex = state.currentSlideIndex;
+        currentCycle = state.currentCycle;
+        // Restore active words by matching IDs
+        activeWords = words.filter(w => state.activeWords.includes(w.id));
+        return true;
+    }
+    return false;
+}
+
+function clearSessionState() {
+    localStorage.removeItem('sessionState');
+}
+
 // DOM Elements
 const wordInput = document.getElementById('word-input');
 const meaningInput = document.getElementById('meaning-input');
@@ -194,12 +221,20 @@ function updateRecycleSetting() {
 }
 
 async function startCycle() {
-    // Filter out completed words for this session
-    activeWords = words.filter(w => !w.completed);
+    // Try to load previous session state
+    const hasPreviousSession = loadSessionState();
     
-    if (activeWords.length === 0) {
-        alert('No words available for learning! Add new words or reset completed ones.');
-        return;
+    if (!hasPreviousSession) {
+        // Filter out completed words for this session
+        activeWords = words.filter(w => !w.completed);
+        
+        if (activeWords.length === 0) {
+            alert('No words available for learning! Add new words or reset completed ones.');
+            return;
+        }
+        
+        currentSlideIndex = 0;
+        currentCycle = 1;
     }
     
     // Request wake lock
@@ -211,18 +246,9 @@ async function startCycle() {
         console.log('Wake Lock request failed:', err);
     }
     
-    currentSlideIndex = 0;
-    currentCycle = 1;
     showSlide();
     slideView.style.display = 'flex';
     document.body.style.overflow = 'hidden'; // Hide scrollbar
-    
-    // Add click event listener to slide content
-    const slideContent = document.querySelector('.slide-content');
-    slideContent.addEventListener('click', function(e) {
-        e.stopPropagation(); // Prevent event from bubbling up
-        nextSlide();
-    });
 }
 
 function showSlide() {
@@ -273,6 +299,7 @@ function nextSlide() {
             }
             
             showSlide();
+            saveSessionState(); // Save state after updating
             return;
         }
     }
@@ -291,6 +318,7 @@ function nextSlide() {
     }
     
     showSlide();
+    saveSessionState(); // Save state after updating
 }
 
 function closeSlides() {
@@ -308,6 +336,9 @@ function closeSlides() {
                 console.log('Wake Lock release failed:', err);
             });
     }
+    
+    // Don't clear session state when closing slides
+    // This allows resuming from the same point
 }
 
 function handleKeyPress(e) {
@@ -345,4 +376,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize the word list
     updateWordList();
-}); 
+});
+
+// Add a new function to explicitly clear session state
+function resetSession() {
+    clearSessionState();
+    currentSlideIndex = 0;
+    currentCycle = 1;
+    activeWords = [];
+} 
